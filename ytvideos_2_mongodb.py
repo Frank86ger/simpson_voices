@@ -1,12 +1,13 @@
 """
 Download of all videos defined in `yt_urls.json`. They will get saved to set
-`base_path`/raw_data. Allowed formats are mkv, mp4, webm.
+`base_path`/raw_data path. Allowed formats are for download: mkv, mp4, webm.
 
 Format of `yt_urls.json`:
     {
-    "datestring":[
+    "date-string":[
     "url_1",
     "url_2",
+    ...,
     ]}
 
 After the download, videos get converted to *.wav-format and also saved to the
@@ -72,7 +73,7 @@ def download_convert_mongo(base_path):
                 with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
                 download_successful = True
-            # DownloadError from youtube_dl utils would be better
+            # DownloadError from youtube_dl utils would be better?
             except Exception:
                 download_successful = False
                 pass
@@ -94,10 +95,6 @@ def download_convert_mongo(base_path):
                                      "comment": "",
                                      }
                     raw_data_col.insert_one(mongo_entries)
-
-
-class VideoRemovedError(Exception):
-    pass
 
 
 if __name__ == "__main__":
