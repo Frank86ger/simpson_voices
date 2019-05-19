@@ -16,7 +16,8 @@ date added, and comment get saved to mongoDB database.
 
 database name: "simpsons"
 collection name: "raw_data"
-document layout: {"video_path": ...,
+document layout: {"title": ...,
+                  "video_path": ...,
                   "audio_path": ...,
                   "date_added": ...,
                   "comment": ...,
@@ -41,7 +42,7 @@ def path_check(base_path):
         os.mkdir(os.path.join(base_path, 'raw_data'))
 
 
-def download_convert_mongo(base_path, redownload_existing):
+def download_convert_mongo(base_path, redownload):
     """
     Downloads and converts video and places info in mongoDB.
     """
@@ -68,10 +69,14 @@ def download_convert_mongo(base_path, redownload_existing):
             # check if in db
             title_existing = raw_data_col.find_one({"title": title}) is not None
 
-            if not title_existing or (title_existing and redownload_existing):
+            if not title_existing or (title_existing and redownload):
 
                 media_path = os.path.join(video_folder_path, title)
                 audio_path = os.path.join(video_folder_path, title+'.wav')
+
+                if title_existing:
+                    raw_data_col.delete_one({"title": title})
+                    # TODO delete files
 
                 download_successful = download_video(media_path, url)
 
@@ -96,9 +101,6 @@ def download_convert_mongo(base_path, redownload_existing):
                                          "comment": "",
                                          }
 
-                        if title_existing:
-                            raw_data_col.delete_one({"title": title})
-
                         raw_data_col.insert_one(mongo_entries)
 
 
@@ -120,5 +122,5 @@ if __name__ == "__main__":
     # base_path_ = r'/home/frank/Documents/simpson_voices/'
     # base_path_ = r'/home/frank/Documents/testing/'
     base_path_ = r'/home/frank/Documents/simpson_voices_vers2/'
-    redownload_existing_ = False
-    download_convert_mongo(base_path_, redownload_existing_)
+    redownload_ = False
+    download_convert_mongo(base_path_, redownload_)
