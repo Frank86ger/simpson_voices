@@ -8,12 +8,17 @@ Time stamps are set manually and therefore are not very precise, so intervals
 get recalculated (prune borders of intervals).
 Those intervals will get cut and are saved to disk and mongoDB
 `cut_and_labeled_data/video-id` and `cut_data` collection.
+
+TODO: load from mongodb and process all raw data, that has not been processed
+TODO: and saved to cut_data
+TODO: perhaps flag to reprocess all?
 """
 
 import librosa as li
 import numpy as np
 import os
 import scipy.ndimage as ndi
+import subprocess
 import json
 import pymongo
 
@@ -29,24 +34,47 @@ def check_and_mkdir(base_path, video_to_process):
         os.mkdir(os.path.join(base_path, r'cut_and_labeled_data', video_to_process))
 
 
-def cut_samples_and_add_to_mongo(base_path, video_to_process):
+def delete_dir(base_path, video_name):
+    video_folder_path = os.path.join(base_path, r'cut_and_labeled_data', video_name)
+    subprocess.call('rm {}'.format(video_folder_path), shell=True)
+
+
+def setup_videos_2_process(base_path, reprocess):
     """
     Load data
     load json
     cut data and save
     """
 
-    check_and_mkdir(base_path, video_to_process)
-
     client = pymongo.MongoClient()
     mydb = client["simpsons"]
+    raw_data_col = mydb['raw_data']
     cut_data_col = mydb['cut_data']
 
-    # check if entry with video_to_process already exists in col
-    assert cut_data_col.find_one({"video_name": video_to_process}) is not None,\
-        "Specified video already exists in database!"
+    # all videos in `raw_data` collection
+    videos_to_process = [x['title'] for x in raw_data_col.find({})]
 
-    wave_file_path = os.path.join(base_path, r'raw_data', video_to_process+'.wav')
+    if not reprocess:
+        # only process videos not present in `cut_data` collection aka new videos
+        videos_to_process = [x for x in videos_to_process if cut_data_col.find_one({"video_name": x}) is None]
+
+    for video in videos_to_process:
+        cut_chars_and_add_to_mongo(video, base_path, cut_data_col)
+
+
+def cut_chars_and_add_to_mongo(video, base_path, cut_data_col):
+    """
+    Deleting: ALL cut data of specific video
+
+    """
+    # if video is present in `cut_data` collection
+    if cut_data_col.find_one({"video_name": video}) is not None:
+        cut_data_col.delete_many({"video_name": video})
+        delete_dir(base_path, video)
+
+    check_and_mkdir(base_path, video)
+
+    wave_file_path = os.path.join(base_path, r'raw_data', video + '.wav')
     wave_file = li.core.load(wave_file_path, mono=True)  # loaded wave dava
     wave = wave_file[0]
     sampling_rate = wave_file[1]
@@ -56,10 +84,12 @@ def cut_samples_and_add_to_mongo(base_path, video_to_process):
     # number of digits in samples of wave
     zerofill = int(np.ceil(np.log(len(wave)) / np.log(10.)))
     # search window of .5 seconds
-    search_win = int(0.5*sampling_rate)
+    search_win = int(0.5 * sampling_rate)
 
     # TODO: create folder and set jsons for first videos
-    json_path = os.path.join(base_path, r'raw_data_cutup_jsons', video_to_process+'.json')
+    # TODO: download these json from extern resource
+    # TODO: check if json exists at all, do this when selecting videos to process
+    json_path = os.path.join(base_path, r'raw_data_cutup_jsons', video + '.json')
     with open(json_path, 'r') as fp:
         video_time_stamps = json.load(fp)
 
@@ -76,18 +106,18 @@ def cut_samples_and_add_to_mongo(base_path, video_to_process):
             if len(selected_wave) >= 2048:
                 # file name: char_video-id_start-idx.wav
                 file_name = character + '_' + \
-                            video_to_process + '_' + \
-                            str(start).zfill(zerofill)+'.wav'
+                            video + '_' + \
+                            str(start).zfill(zerofill) + '.wav'
 
                 relative_output_path = os.path.join(r'cut_and_labeled_data',
-                                                    video_to_process,
+                                                    video,
                                                     file_name)
 
                 save_path = os.path.join(base_path, relative_output_path)
                 li.output.write_wav(save_path, selected_wave, 22050)
 
-                sample_length = end-start
-                mongo_entries = {"video_name": video_to_process,
+                sample_length = end - start
+                mongo_entries = {"video_name": video,
                                  "character": character,
                                  "start_samp": int(start),
                                  "length": int(sample_length),
@@ -98,8 +128,8 @@ def cut_samples_and_add_to_mongo(base_path, video_to_process):
 
 def get_search_win(index, floating_mean, search_win):
     """
-    Used to find location in signal where a speak break is most likely (minimum
-    of floating mean of signal within `search_win`.
+    Find location in signal where a speak-break is most likely (minimum of
+    floating mean of abs of signal within `search_win`.
 
     Parameters
     ----------
@@ -120,5 +150,5 @@ def get_search_win(index, floating_mean, search_win):
 if __name__ == "__main__":
 
     base_path_ = r'/home/frank/Documents/simpson_voices/'
-    video_to_process_ = r'6LxwqJtE1A8'
-    cut_samples_and_add_to_mongo(base_path_, video_to_process_)
+    reprocess_ = False
+    setup_videos_2_process(base_path_, reprocess_)
