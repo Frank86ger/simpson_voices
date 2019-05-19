@@ -41,7 +41,7 @@ def path_check(base_path):
         os.mkdir(os.path.join(base_path, 'raw_data'))
 
 
-def download_convert_mongo(base_path):
+def download_convert_mongo(base_path, redownload_existing):
     """
     Downloads and converts video and places info in mongoDB.
     """
@@ -60,45 +60,65 @@ def download_convert_mongo(base_path):
 
     for date in yt_urls:
         for url in yt_urls[date]:
+
             print('Downloading and converting {}'.format(url))
             # the title are the last 8 chars after `watch?v=`
             title = url[(url.find('watch?v=')+8):]
 
-            # complete path to video
-            media_path = os.path.join(video_folder_path, title)
-            audio_path = os.path.join(video_folder_path, title+'.wav')
-            ydl_opts = {'outtmpl': media_path}
+            # check if in db
+            title_existing = raw_data_col.find_one({"title": title}) is not None
 
-            try:
-                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
-                download_successful = True
-            # DownloadError from youtube_dl utils would be better?
-            except Exception:
-                download_successful = False
-                pass
+            if not title_existing or (title_existing and redownload_existing):
 
-            if download_successful:
-                video_path = None
-                possible_video_paths = glob.glob(media_path+".*")
-                for file_ in possible_video_paths:  # unsauber
-                    for ending in allowed_vids:
-                        if file_.find(ending) != -1:
-                            video_path = file_
+                media_path = os.path.join(video_folder_path, title)
+                audio_path = os.path.join(video_folder_path, title+'.wav')
 
-                if video_path is not None:
-                    subprocess.call('ffmpeg -i {} {}'.format(video_path, audio_path), shell=True)
+                download_successful = download_video(media_path, url)
 
-                    mongo_entries = {"video_path": os.path.basename(video_path),
-                                     "audio_path": os.path.basename(audio_path),
-                                     "date_added": date,
-                                     "comment": "",
-                                     }
-                    raw_data_col.insert_one(mongo_entries)
+                if download_successful:
+                    video_path = None
+                    possible_video_paths = glob.glob(media_path+".*")
+                    for file_ in possible_video_paths:  # unsauber
+                        for ending in allowed_vids:
+                            if file_.find(ending) != -1:
+                                video_path = file_
+
+                    if video_path is not None:
+                        subprocess.call('ffmpeg -i {} {}'.format(video_path, audio_path), shell=True)
+
+                        relative_video_path = os.path.join(r'raw_data', os.path.basename(video_path))
+                        relative_audio_path = os.path.join(r'raw_data', os.path.basename(audio_path))
+
+                        mongo_entries = {"title": title,
+                                         "video_path": relative_video_path,
+                                         "audio_path": relative_audio_path,
+                                         "date_added": date,
+                                         "comment": "",
+                                         }
+
+                        if title_existing:
+                            raw_data_col.delete_one({"title": title})
+
+                        raw_data_col.insert_one(mongo_entries)
+
+
+def download_video(media_path, url):
+    ydl_opts = {'outtmpl': media_path}
+    try:
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        download_successful = True
+    # DownloadError from youtube_dl utils would be better?
+    except Exception:
+        download_successful = False
+        pass
+    return download_successful
 
 
 if __name__ == "__main__":
 
     # base_path_ = r'/home/frank/Documents/simpson_voices/'
-    base_path_ = r'/home/frank/Documents/testing/'
-    download_convert_mongo(base_path_)
+    # base_path_ = r'/home/frank/Documents/testing/'
+    base_path_ = r'/home/frank/Documents/simpson_voices_vers2/'
+    redownload_existing_ = False
+    download_convert_mongo(base_path_, redownload_existing_)
