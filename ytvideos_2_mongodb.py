@@ -22,6 +22,7 @@ document layout: {"title": ...,
                   "date_added": ...,
                   "comment": ...,
                   }
+TODO: get video urls from external source
 """
 
 import os
@@ -76,7 +77,7 @@ def download_convert_mongo(base_path, redownload):
 
                 if title_existing:
                     raw_data_col.delete_one({"title": title})
-                    # TODO delete files
+                    subprocess.call('rm {}*'.format(media_path), shell=True)
 
                 download_successful = download_video(media_path, url)
 
@@ -111,7 +112,7 @@ def download_video(media_path, url):
             ydl.download([url])
         download_successful = True
     # DownloadError from youtube_dl utils would be better?
-    except Exception:
+    except FileNotFoundError:
         download_successful = False
         pass
     return download_successful
