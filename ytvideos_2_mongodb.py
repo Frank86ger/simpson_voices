@@ -22,7 +22,6 @@ document layout: {"title": ...,
                   "date_added": ...,
                   "comment": ...,
                   }
-TODO: get video urls from external source
 """
 
 import os
