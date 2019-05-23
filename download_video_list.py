@@ -1,10 +1,11 @@
+"""
+Download simpsons-youtube *.json and time-stap-json, when available.
+"""
 
-
+import os
 import json
 import urllib.request
 import requests
-import os
-# TODO: check and mk raw_data_cutup_jsons
 
 
 def check_and_mkdir(base_path):
