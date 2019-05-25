@@ -48,7 +48,7 @@ def path_check(base_path):
 
 def download_convert_mongo(base_path, redownload):
     """
-    Downloads and converts video and places info in mongoDB.
+    Downloads and converts video; places video-info in mongoDB.
 
     Parameters
     ----------
