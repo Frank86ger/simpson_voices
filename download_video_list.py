@@ -9,12 +9,27 @@ import requests
 
 
 def check_and_mkdir(base_path):
+    """
+    Check if path exists. If not it will get created.
+
+    Parameters
+    ----------
+    base_path : str
+        Base output path.
+    """
     if not os.path.isdir(os.path.join(base_path, 'raw_data_cutup_jsons')):
         os.mkdir(os.path.join(base_path, 'raw_data_cutup_jsons'))
 
 
 def get_video_data(base_path):
+    """
+    Download `yt_urls.json` and the cutup data from external source
 
+    Parameters
+    ----------
+    base_path : str
+        Base output path.
+    """
     check_and_mkdir(base_path)
     time_stamps_base_addr = r'https://raw.githubusercontent.com/Frank86ger/simpsons_data/master/video_intervals/'
     video_addr = r'https://raw.githubusercontent.com/Frank86ger/simpsons_data/master/yt_urls.json'
@@ -36,6 +51,16 @@ def get_video_data(base_path):
 
 
 def save_json(out_path, json_dict):
+    """
+    Save dictionary as json file.
+
+    Parameters
+    ----------
+    out_path : str
+        Complete save path of json-file.
+    json_dict : dict
+        Dictionary to save as json-file
+    """
     with open(out_path, 'w+') as f:
         json.dump(json_dict, f)
 
