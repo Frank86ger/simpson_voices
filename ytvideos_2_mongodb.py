@@ -37,6 +37,10 @@ def path_check(base_path):
     """
     Check if the folder `raw_data` exits within `base_path`. If not,
     it gets created.
+    Parameters
+    ----------
+    base_path : str
+        Path to base folder
     """
     if not os.path.isdir(os.path.join(base_path, 'raw_data')):
         os.mkdir(os.path.join(base_path, 'raw_data'))
@@ -45,6 +49,13 @@ def path_check(base_path):
 def download_convert_mongo(base_path, redownload):
     """
     Downloads and converts video and places info in mongoDB.
+
+    Parameters
+    ----------
+    base_path : str
+        Path to base folder
+    redownload : bool
+        overwrite existing entries
     """
 
     path_check(base_path_)
@@ -74,6 +85,7 @@ def download_convert_mongo(base_path, redownload):
                 media_path = os.path.join(video_folder_path, title)
                 audio_path = os.path.join(video_folder_path, title+'.wav')
 
+                # delete data and mongoDB-entry, if redownload
                 if title_existing:
                     raw_data_col.delete_one({"title": title})
                     subprocess.call('rm {}*'.format(media_path), shell=True)
@@ -105,6 +117,16 @@ def download_convert_mongo(base_path, redownload):
 
 
 def download_video(media_path, url):
+    """
+    Download youtube video to path.
+
+    Parameters
+    ----------
+    media_path : str
+        Path to download video to
+    url : str
+        Youtube url
+    """
     ydl_opts = {'outtmpl': media_path}
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
