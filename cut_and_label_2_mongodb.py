@@ -8,10 +8,6 @@ Time stamps are set manually and therefore are not very precise, so intervals
 get recalculated (prune borders of intervals).
 Those intervals will get cut and are saved to disk and mongoDB
 `cut_and_labeled_data/video-id` and `cut_data` collection.
-
-TODO: load from mongodb and process all raw data, that has not been processed
-TODO: and saved to cut_data
-TODO: perhaps flag to reprocess all?
 """
 
 import librosa as li
@@ -26,7 +22,14 @@ import pymongo
 def check_and_mkdir(base_path, video_to_process):
     """
     Check if the folder `base_path` and `cut_and_labeled_data` exits
-     within `base_path`. If not, it gets created.
+    within `base_path`. If not, it gets created.
+
+    Parameters
+    ----------
+    base_path : str
+        Base output folder
+    video_to_process : str
+        Video name (from url string)
     """
     if not os.path.isdir(os.path.join(base_path, r'cut_and_labeled_data')):
         os.mkdir(os.path.join(base_path, r'cut_and_labeled_data'))
@@ -35,15 +38,32 @@ def check_and_mkdir(base_path, video_to_process):
 
 
 def delete_dir(base_path, video_name):
+    """
+    Delete folder and content of specific video
+
+    Parameters
+    ----------
+    base_path : str
+        Base ouput folder.
+    video_name : str
+        Video name (from url string)
+    """
     video_folder_path = os.path.join(base_path, r'cut_and_labeled_data', video_name)
     subprocess.call('rm {}'.format(video_folder_path), shell=True)
 
 
 def setup_videos_2_process(base_path, reprocess):
     """
-    Load data
-    load json
-    cut data and save
+    Setup the processing for all videos mongoDB
+
+    Parameters
+    ----------
+    base_path : str
+        Base output folder.
+    reprocess : bool
+        Reprocess existing data?
+    Returns
+    -------
     """
 
     client = pymongo.MongoClient()
@@ -64,10 +84,19 @@ def setup_videos_2_process(base_path, reprocess):
 
 def cut_chars_and_add_to_mongo(video, base_path, cut_data_col):
     """
-    Deleting: ALL cut data of specific video
+    Segment audio file into segments of single characters talking.
 
+    Parameters
+    ----------
+    video : str
+        Video name string.
+    base_path : str
+        Base output folder.
+    cut_data_col : mongoDB collection cursor
+        Collection with raw data.
     """
     # if video is present in `cut_data` collection
+    # delete all mongoDB entries for video and delete cutuo data folder
     if cut_data_col.find_one({"video_name": video}) is not None:
         cut_data_col.delete_many({"video_name": video})
         delete_dir(base_path, video)
@@ -86,9 +115,6 @@ def cut_chars_and_add_to_mongo(video, base_path, cut_data_col):
     # search window of .5 seconds
     search_win = int(0.5 * sampling_rate)
 
-    # TODO: create folder and set jsons for first videos
-    # TODO: download these json from extern resource
-    # TODO: check if json exists at all, do this when selecting videos to process
     json_path = os.path.join(base_path, r'raw_data_cutup_jsons', video + '.json')
     with open(json_path, 'r') as fp:
         video_time_stamps = json.load(fp)
@@ -139,6 +165,11 @@ def get_search_win(index, floating_mean, search_win):
         floating mean of audio signal
     search_win : int
         Search window size
+
+    Returns
+    -------
+    selected_index : int
+        Index where to split two segments.
     """
     # get start and end indices of search_window
     search_start = max(0, index - search_win)
