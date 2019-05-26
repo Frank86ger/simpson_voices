@@ -66,5 +66,5 @@ def save_json(out_path, json_dict):
 
 
 if __name__ == '__main__':
-    base_path_ = r'/home/frank/Documents/simpson_voices_vers2/'
+    base_path_ = r'/home/frank/Documents/simpson_voices_3/'
     get_video_data(base_path_)

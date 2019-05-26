@@ -133,7 +133,7 @@ def download_video(media_path, url):
             ydl.download([url])
         download_successful = True
     # DownloadError from youtube_dl utils would be better?
-    except FileNotFoundError:
+    except:
         download_successful = False
         pass
     return download_successful
@@ -143,6 +143,6 @@ if __name__ == "__main__":
 
     # base_path_ = r'/home/frank/Documents/simpson_voices/'
     # base_path_ = r'/home/frank/Documents/testing/'
-    base_path_ = r'/home/frank/Documents/simpson_voices_vers2/'
+    base_path_ = r'/home/frank/Documents/simpson_voices_3/'
     redownload_ = False
     download_convert_mongo(base_path_, redownload_)

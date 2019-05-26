@@ -79,7 +79,9 @@ def setup_videos_2_process(base_path, reprocess):
         videos_to_process = [x for x in videos_to_process if cut_data_col.find_one({"video_name": x}) is None]
 
     for video in videos_to_process:
-        cut_chars_and_add_to_mongo(video, base_path, cut_data_col)
+        video_path = os.path.join(base_path, r'raw_data_cutup_jsons', video + '.json')
+        if os.path.isfile(video_path):
+            cut_chars_and_add_to_mongo(video, base_path, cut_data_col)
 
 
 def cut_chars_and_add_to_mongo(video, base_path, cut_data_col):
@@ -180,6 +182,6 @@ def get_search_win(index, floating_mean, search_win):
 
 if __name__ == "__main__":
 
-    base_path_ = r'/home/frank/Documents/simpson_voices/'
+    base_path_ = r'/home/frank/Documents/simpson_voices_3/'
     reprocess_ = False
     setup_videos_2_process(base_path_, reprocess_)
