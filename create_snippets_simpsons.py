@@ -146,6 +146,7 @@ def load_audio_and_cutup_save_snippets(base_path, cut_document, chars, snippet_c
                 li.output.write_wav(os.path.join(base_path, relative_wave_path), snippet, sampling_rate)
                 mongo_dic = {"character": selected_char,
                              "path": relative_wave_path,
+                             "npy_path": relative_npy_path + '.npy',
                              "video_name": video_name}
                 snippet_col.insert_one(mongo_dic)
 
@@ -160,11 +161,12 @@ def load_audio_and_cutup_save_snippets(base_path, cut_document, chars, snippet_c
                 np.save(os.path.join(base_path, relative_npy_path), snippet)
                 mongo_dic = {"character": "misc",
                              "path": relative_wave_path,
+                             "npy_path": relative_npy_path + '.npy',
                              "video_name": video_name}
                 snippet_col.insert_one(mongo_dic)
 
 
 if __name__ == "__main__":
     base_path_ = r'/home/frank/Documents/simpson_voices_3/'
-    reprocess_ = False
+    reprocess_ = True
     crawl_collection_and_setup_snippets(base_path_, reprocess_)
