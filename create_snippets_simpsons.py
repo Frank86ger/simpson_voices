@@ -26,8 +26,8 @@ def get_cut_data_collection():
 
 def delete_files_from_mongo_entries(base_path, snippets_4_video):
     for snippet in snippets_4_video:
-        wav_path = os.path.join(base_path, snippets_4_video['path'])
-        npy_path = os.path.join(base_path, snippets_4_video['npy_path'])
+        wav_path = os.path.join(base_path, snippet['path'])
+        npy_path = os.path.join(base_path, snippet['npy_path'])
         subprocess.call('rm {}'.format(wav_path), shell=True)
         subprocess.call('rm {}'.format(npy_path), shell=True)
 
