@@ -1,5 +1,7 @@
 """
 story time
+TODO: play with parameters
+TODO: make parameters accessible in config file
 """
 import pymongo
 import librosa as li
@@ -7,6 +9,7 @@ import os
 import numpy as np
 import scipy.ndimage as ndi
 import uuid
+import subprocess
 
 
 def get_cut_data_collection():
@@ -15,15 +18,26 @@ def get_cut_data_collection():
     mydb = client["simpsons"]
     cut_col = mydb["cut_data"]
     snippet_col = mydb["snippet_data"]
-    return cut_col.find({}), snippet_col
+
+    unique_videos = cut_col.find({}).distinct("video_name")
+
+    return unique_videos, cut_col, snippet_col
 
 
-def crawl_collection_and_setup_snippets(base_path):
+def delete_files_from_mongo_entries(base_path, snippets_4_video):
+    for snippet in snippets_4_video:
+        wav_path = os.path.join(base_path, snippets_4_video['path'])
+        npy_path = os.path.join(base_path, snippets_4_video['npy_path'])
+        subprocess.call('rm {}'.format(wav_path), shell=True)
+        subprocess.call('rm {}'.format(npy_path), shell=True)
+
+
+def crawl_collection_and_setup_snippets(base_path, reprocess):
 
     snippet_path = os.path.join(base_path, r'snippets_2048')
     if not os.path.isdir(snippet_path):
         os.mkdir(snippet_path)
-    # alle?
+    # extension by additional chars possible?
     characters = ['homer', 'bart', 'lisa', 'marge', 'misc']
     for char in characters:
         char_path = os.path.join(snippet_path, char)
@@ -31,17 +45,34 @@ def crawl_collection_and_setup_snippets(base_path):
             os.mkdir(char_path)
 
     # Get the audio pieces from characters
-    collection, snippet_col = get_cut_data_collection()
+    unique_videos, cut_col, snippet_col = get_cut_data_collection()
 
-    for item in collection:
-        load_audio_and_cutup_save_snippets(base_path,
-                                           item['path'],
-                                           ['homer', 'bart', 'lisa', 'marge'],
-                                           item['character'],
-                                           snippet_col)
+    for video in unique_videos:
+        snippets_4_video = snippet_col.find({'video_name': video})
+
+        # only process video if not existing in snippet-collection or
+        # if reprocess is selected
+        if snippets_4_video is None or reprocess:
+            # if videos exist in snippet collection -> delete files and entries
+            if snippets_4_video is not None:
+                delete_files_from_mongo_entries(base_path, snippets_4_video)
+                snippet_col.delete_many({'video_name': video})
+
+        cut_documents = cut_col.find({'video_name': video})
+        for document in cut_documents:
+
+            load_audio_and_cutup_save_snippets(base_path,
+                                               document,
+                                               ['homer', 'bart', 'lisa', 'marge'],
+                                               snippet_col,
+                                               )
 
 
-def load_audio_and_cutup_save_snippets(base_path, audio_path, chars, selected_char, snippet_col):
+def load_audio_and_cutup_save_snippets(base_path, cut_document, chars, snippet_col):
+
+    audio_path = cut_document['path']
+    selected_char = cut_document['character']
+    video_name = cut_document['video_name']
 
     # load audio
     cplt_path = os.path.join(base_path, audio_path)
@@ -103,26 +134,37 @@ def load_audio_and_cutup_save_snippets(base_path, audio_path, chars, selected_ch
         nmbr_of_snippets = int(np.floor(((packet[1]-packet[0])-length)/shift) + 1)
         for idx in range(nmbr_of_snippets):
             snippet = wave[idx*shift:idx*shift+length]
-
+            unique_id = str(uuid.uuid4())
             if selected_char in chars:
-                relative_path = os.path.join(r'snippets_2048',
-                                             selected_char,
-                                             str(uuid.uuid4())+'.wav')
-                li.output.write_wav(os.path.join(base_path, relative_path), snippet, sampling_rate)
+                relative_wave_path = os.path.join(r'snippets_2048',
+                                                  selected_char,
+                                                  unique_id + '.wav')
+                relative_npy_path = os.path.join(r'snippets_2048',
+                                                  selected_char,
+                                                  unique_id)
+                np.save(relative_npy_path, snippet)
+                li.output.write_wav(os.path.join(base_path, relative_wave_path), snippet, sampling_rate)
                 mongo_dic = {"character": selected_char,
-                             "path": relative_path}
+                             "path": relative_wave_path,
+                             "video_name": video_name}
                 snippet_col.insert_one(mongo_dic)
 
             else:
-                relative_path = os.path.join(r'snippets_2048',
-                                             r'misc',
-                                             str(uuid.uuid4()) + '.wav')
-                li.output.write_wav(os.path.join(base_path, relative_path), snippet, sampling_rate)
+                relative_wave_path = os.path.join(r'snippets_2048',
+                                                  r'misc',
+                                                  unique_id + '.wav')
+                relative_npy_path = os.path.join(r'snippets_2048',
+                                                  r'misc',
+                                                  unique_id)
+                li.output.write_wav(os.path.join(base_path, relative_wave_path), snippet, sampling_rate)
+                np.save(relative_npy_path, snippet)
                 mongo_dic = {"character": "misc",
-                             "path": relative_path}
+                             "path": relative_wave_path,
+                             "video_name": video_name}
                 snippet_col.insert_one(mongo_dic)
 
 
 if __name__ == "__main__":
     base_path_ = r'/home/frank/Documents/simpson_voices/'
-    crawl_collection_and_setup_snippets(base_path_)
+    reprocess_ = False
+    crawl_collection_and_setup_snippets(base_path_, reprocess_)
