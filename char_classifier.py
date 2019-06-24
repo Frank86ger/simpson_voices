@@ -1,6 +1,8 @@
 """
 
 TODO: needs HEAVY rework
+TODO: cuda
+TODO: das hier wird zum trainer
 """
 
 import numpy as np
@@ -14,6 +16,7 @@ import torch.nn.functional as F
 # from random import shuffle
 from snippet_sampler import SnippetSampler
 import time
+from confusion_to_stats import ConfusionToStats
 
 
 class Network(nn.Module):
@@ -30,51 +33,90 @@ class Network(nn.Module):
         return decision
 
 
-def do_it():
+class Trainer(object):
+    def __init__(self,
+                 model,
+                 criterion,
+                 optimizer,
+                 epoch_count,
+                 base_path,
+                 char_select,
+                 rfft,
+                 batch_size,
+                 one_output_cat):
 
-    model = Network(1025, 512, 2)
-    base_path_ = r'/home/frank/Documents/simpson_voices_3/'
-    char_select = [['homer'],
-                   ['misc', 'marge', 'lisa', 'bart']]
-    # char_select = [['homer'],
-    #                ['lisa', 'marge'],
-    #                ['bart', 'misc']]
+        self.model = model
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.epoch_count = epoch_count
+        self.base_path = base_path,
+        self.char_select = char_select,
+        self.rfft = rfft
+        self.batch_size = batch_size
+        self.one_output_cat = one_output_cat
 
-    ss = SnippetSampler(base_path_, char_select, one_output_cat=False)
-    ss.load_all_available_data_rfft()
-    ss.test_train_split()
-    ss.create_train_selection()
-    ss.flatten_data()
+    @classmethod
+    def from_json_file(cls, file_path):
+        raise NotImplementedError
 
-    criterion = torch.nn.MSELoss(reduction='sum')
-    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
+    @classmethod
+    def from_json_dict(cls, model, criterion, optimizer, epoch_count, dict_):
+        return cls(model, criterion, optimizer, epoch_count, dict_['base_path'],
+                   dict_['char_select'], dict_['rfft'], dict_['batch_size'],
+                   dict_['one_output_cat'])
 
-    tic = time.time()
-    for epoch in range(10):
-        x, Y = ss.get_batches()
-        # thisone = x[0]
-        for idx in range(x.shape[0]):
-            # print(x[idx].shape)
-            # the_x = x[idx]
-            # print(Y[idx].shape)
-            # print(Y[idx])
-            y_pred = model(x[idx])
-            loss = criterion(y_pred, Y[idx])
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+    def train(self):
 
-        print(epoch)
-        print(loss)
+        base_path = r'/home/frank/Documents/simpson_voices_3/'
+        char_select = [['homer'],
+                       ['misc', 'marge', 'lisa', 'bart']]
 
-    toc = time.time()
-    print(toc-tic)
+        ss = SnippetSampler.from_selection(base_path,
+                                           char_select,
+                                           rfft=self.rfft,
+                                           tt_split=0.9,
+                                           # batch_size=self.batch_size,
+                                           batch_size=10,
+                                           one_output_cat=True
+                                           )
 
-    print(ss.test_data_create_confusion(model))
+        for epoch in range(self.epoch_count):
+            x, Y = ss.get_batches()
+            for idx in range(x.shape[0]):
+                y_pred = self.model(x[idx])
+                loss = self.criterion(y_pred, Y[idx])
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
 
-    import IPython
-    IPython.embed()
+            print(epoch)
+            print(loss)
+
+        confusion = ss.test_data_create_confusion(self.model.cpu())
+        cts = ConfusionToStats(confusion)
+        cts.print_prec_recall()
 
 
 if __name__=='__main__':
-    do_it()
+
+    base_path_ = r'/home/frank/Documents/simpson_voices_3/'
+    char_select_ = [['homer'],
+                    ['misc', 'marge', 'lisa', 'bart']]
+
+    json_dict = {'base_path': base_path_,
+                 'char_select': char_select_,
+                 'rfft': True,
+                 'batch_size': 10,
+                 'one_output_cat': True,
+                 }
+
+    model = Network(1025, 512, 1)
+    model.cuda()
+    criterion = torch.nn.MSELoss(reduction='sum')
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
+
+    brain = Trainer.from_json_dict(model, criterion, optimizer, 20, json_dict)
+    brain.train()
+
+
+
