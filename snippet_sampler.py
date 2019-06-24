@@ -27,12 +27,14 @@ class SnippetSampler(object):
         self.nmbr_categories = len(self.char_selection)
         self.tt_split = tt_split
         self.batch_size = batch_size
-        self.resample = resample
+        self.resample = resample  # kann raus
         self.one_output_cat = one_output_cat
 
+        # all data loaded into memory
         self.all_data = []
         self.all_labels = []
 
+        # test/train split for all data and labels
         self.test_data = []
         self.train_data = []
         self.test_label = []
@@ -59,8 +61,39 @@ class SnippetSampler(object):
         self.train_path_gen = []
 
     @classmethod
-    def all_but_one(cls, char):
-        pass
+    def from_all_but_one(cls, base_path, char, one_output_cat=False):
+        raise NotImplementedError
+
+    @classmethod
+    def from_selection(cls,
+                       base_path,
+                       char_selection,
+                       rfft=False,
+                       resample = True,
+                       tt_split = 0.9,
+                       batch_size = 10,
+                       one_output_cat=True,
+                       ):
+
+        self = cls(base_path,
+                   char_selection,
+                   resample,
+                   tt_split,
+                   batch_size,
+                   one_output_cat)
+
+        # TODO possibility to take differently sizes classes
+
+        if rfft:
+            self.load_all_available_data_rfft()
+        else:
+            self.load_all_available_data_raw()
+
+        self.test_train_split()
+        self.create_train_selection()
+        self.flatten_data()
+
+        return self
 
     @staticmethod
     def get_available_chars():
@@ -121,6 +154,7 @@ class SnippetSampler(object):
                 label = np.zeros(self.nmbr_categories, dtype=float)
                 label[idx] = 1.
                 self.all_labels.append(len(category) * [label])
+        print('----------- Loading data: DONE -----')
 
     def load_all_available_data_rfft(self):
 
@@ -138,6 +172,7 @@ class SnippetSampler(object):
                 label = np.zeros(self.nmbr_categories, dtype=float)
                 label[idx] = 1.
                 self.all_labels.append(len(category) * [label])
+        print('----------- Loading data: DONE -----')
 
     def test_train_split(self):
 
@@ -146,18 +181,18 @@ class SnippetSampler(object):
         self.train_size = int((self.tt_split*smallest_size)//self.batch_size*self.batch_size)
 
         for category in self.all_data:
-            # shuffle here
+            random.shuffle(category)  # shuffle for changing tt-splits
             self.test_data.append(np.array(category[:test_size]))
             self.train_data.append(np.array(category[test_size:]))
         for category in self.all_labels:
-            # eigentlich auch shuffle hier, braucht aber nicht
+            # no shuffle needed here
             self.test_label.append(np.array(category[:test_size]))
             self.train_label.append(np.array(category[test_size:]))
 
     def create_train_selection(self):
         self.train_selection = []
         for category in self.train_data:
-            self.train_selection.append(np.random.choice(np.arange(len(category), dtype=int), self.train_size))
+            self.train_selection.append(np.random.choice(np.arange(len(category), dtype=int), self.train_size, replace=False))
 
     def reshuffle_train_selection(self):
         """
@@ -175,8 +210,11 @@ class SnippetSampler(object):
             self.flat_used_labels = np.concatenate([self.flat_used_labels,
                                                     self.train_label[idx][selection, :]], axis=0)
 
-        self.flat_used_data = torch.tensor(self.flat_used_data, dtype=torch.float32)
-        self.flat_used_labels = torch.tensor(self.flat_used_labels, dtype=torch.float32)
+        self.flat_used_data = torch.tensor(self.flat_used_data, dtype=torch.float32).cuda()
+        self.flat_used_labels = torch.tensor(self.flat_used_labels, dtype=torch.float32).cuda()
+
+        # self.flat_used_data = torch.tensor(self.flat_used_data, dtype=torch.float32)
+        # self.flat_used_labels = torch.tensor(self.flat_used_labels, dtype=torch.float32)
 
     def create_batches(self):
         permutation = torch.randperm(len(self.flat_used_data))
@@ -189,6 +227,12 @@ class SnippetSampler(object):
                                                          self.label_size).clone().detach().requires_grad_(False)
 
     def get_batches(self):
+        self.create_batches()
+        return self.x, self.Y
+
+    def get_batches_resample(self):
+        self.create_train_selection()
+        self.flatten_data()
         self.create_batches()
         return self.x, self.Y
 
@@ -254,7 +298,9 @@ class SnippetSampler(object):
         return self.batch_generator()
 
     def test_data_create_confusion(self, model):
-
+        #  TODO confusion richtig?
+        #  TODO boil down bigger 3x3 to stat
+        #  TODO func confusion -> stats
         if self.one_output_cat and self.nmbr_categories == 2:
             confusion = torch.zeros((2, 2))
             for (idx_cat, cat) in enumerate(self.test_data):
@@ -303,6 +349,10 @@ class SnippetSampler(object):
 
     def print_confusion(self):
         pass
+
+    def __repr__(self):
+        # make it state dependant
+        return 0
 
 
 if __name__ == "__main__":
