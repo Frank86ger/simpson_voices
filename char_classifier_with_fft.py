@@ -132,8 +132,9 @@ class Trainer(object):
         criterion = torch.nn.MSELoss(reduction='sum')
         optimizer = torch.optim.SGD(self.model.parameters(), lr=1e-3, momentum=0.9)
 
-        nmbr_epochs = 50
+        nmbr_epochs = 75
         mean_loss = 0.
+        loss_hist = []
         for epoch in range(nmbr_epochs):
             print('Epoch: {}'.format(epoch))
             self.get_data_for_epoch()
@@ -143,6 +144,7 @@ class Trainer(object):
                 # if t % 100 == 0:
                 #     print(loss)
                 mean_loss += loss
+                loss_hist.append(loss)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -150,6 +152,10 @@ class Trainer(object):
             print('Loss: {0:.8f}'.format(mean_loss / len(self.x)))
             print('-----------------------')
             mean_loss = 0.
+        # loss_hist = np.array(loss_hist)
+        # import matplotlib.pyplot as plt
+        # plt.plot(loss_hist)
+        # plt.show()
 
     def test_brain(self):
 
@@ -158,7 +164,7 @@ class Trainer(object):
         print("-- Testing the training --")
         print('--------------------------')
         confusion = np.zeros((2, 2))
-
+        # confusion neu!
         for item in self.fp_char_test:
             val = torch.tensor(np.abs(np.fft.rfft(np.load(item))))
             soln = self.model(val)
@@ -166,8 +172,9 @@ class Trainer(object):
                 # True positive
                 confusion[0, 0] += 1
             else:
-                # False positive
-                confusion[0, 1] += 1
+                # False negatives
+                # print(item)
+                confusion[1, 0] += 1
         for item in self.fp_non_char_test:
             val = torch.tensor(np.abs(np.fft.rfft(np.load(item))))
             soln = self.model(val)
@@ -175,12 +182,14 @@ class Trainer(object):
                 # True negatives
                 confusion[1, 1] += 1
             else:
-                # False negatives
-                confusion[1, 0] += 1
+                # False positives
+                confusion[0, 1] += 1
+
 
         print('--------------------------')
         print('---- Confusion Matrix ----')
-        print(confusion)
+        print("[TP  FP]  -  {}".format(confusion[0, :]))
+        print("[FN  TN]  -  {}".format(confusion[1, :]))
         print('--------------------------')
         print('correct   : {}'.format(confusion[0, 0] + confusion[1, 1]))
         print('incorrect : {}'.format(confusion[1, 0] + confusion[0, 1]))
@@ -191,6 +200,14 @@ class Trainer(object):
         print('--------------------------')
         print('--------------------------')
 
+    def save_network(self):
+        # model_path = os.path.join(self.base_path, r'fft_nnets', r'fft_nn_{}'.format(unique_id))
+        model_path = os.path.join(self.base_path, r'fft_nn_bart_{}'.format(5))
+        # dont forget zfill!
+        # save info in mongo db
+        # create dir
+        torch.save(self.model.state_dict(), model_path)
+
 
 if __name__ == "__main__":
     base_path_ = r'/home/frank/Documents/simpson_voices_3/'
@@ -199,5 +216,6 @@ if __name__ == "__main__":
     trainer.get_data_for_epoch()
     trainer.train_brain()
     trainer.test_brain()
+    trainer.save_network()
     import IPython
     IPython.embed()
