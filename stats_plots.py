@@ -29,10 +29,16 @@ class StatsPlotter(object):
                        'predicted': ['FP', 'FN', 'TN', 'TP'],
                        }
 
-        self.stats = {'TP': 120,
-                      'TN': 100,
-                      'FP': 50,
-                      'FN': 30,
+        # self.stats = {'TP': 120,
+        #               'TN': 100,
+        #               'FP': 50,
+        #               'FN': 30,
+        #               }
+
+        self.stats = {'TP': 217,
+                      'TN': 130,
+                      'FP': 106,
+                      'FN': 19,
                       }
 
         self.stats['pP'] = self.stats['TP'] + self.stats['FP']
@@ -51,6 +57,10 @@ class StatsPlotter(object):
                         }
 
         self.order = 'actual'
+
+    @classmethod
+    def create_plot_from_confusion(cls, data_, out_path=None):
+        pass
 
     @staticmethod
     def deg_2_cart(deg_):
@@ -216,6 +226,10 @@ class StatsPlotter(object):
         p.add_layout(Label(x=-1, y=3, text='aP: {}'.format(self.stats['aP']), text_align='center', text_font_size="16pt"))
         p.add_layout(Label(x=1, y=3, text='aN: {}'.format(self.stats['aN']), text_align='center', text_font_size="16pt"))
 
+        p.axis.axis_label = None
+        p.axis.visible = False
+        p.grid.grid_line_color = None
+
         return p
 
     def setup_bar_plots(self):
@@ -248,7 +262,7 @@ class StatsPlotter(object):
         fdr_text = 'FDR:{0:.2f}'.format(self.measure['FDR'])
         ppv_text = 'PPV:{0:.2f}'.format(self.measure['PPV'])
         p.add_layout(Label(x=-0.2, y=-4, text=fdr_text, text_align='center', text_font_size="16pt"))
-        p.add_layout(Label(x=-0.2, y=-4.5, text='false discovery rate', text_align='center', text_font_size="16pt"))
+        p.add_layout(Label(x=-0.2, y=-4.5, text='false discovery rate', text_align='center', text_font_size="12pt"))
         p.add_layout(Label(x=1.2, y=-4, text=ppv_text, text_align='center', text_font_size="16pt"))
         p.add_layout(Label(x=1.2, y=-4.5, text='precision', text_align='center', text_font_size="16pt"))
 
@@ -258,12 +272,16 @@ class StatsPlotter(object):
         for_text = 'FOR:{0:.2f}'.format(self.measure['FOR'])
         npv_text = 'NPV:{0:.2f}'.format(self.measure['NPV'])
         p.add_layout(Label(x=-0.2, y=-6, text=for_text, text_align='center', text_font_size="16pt"))
-        p.add_layout(Label(x=-0.2, y=-6.5, text='false omission rate', text_align='center', text_font_size="16pt"))
+        p.add_layout(Label(x=-0.2, y=-6.5, text='false omission rate', text_align='center', text_font_size="12pt"))
         p.add_layout(Label(x=1.2, y=-6, text=npv_text, text_align='center', text_font_size="16pt"))
-        p.add_layout(Label(x=1.2, y=-6.5, text='negative predictive value', text_align='center', text_font_size="16pt"))
+        p.add_layout(Label(x=1.2, y=-6.5, text='negative predictive value', text_align='center', text_font_size="12pt"))
 
         # p.y_range = Range1d(-2.5, 2.5, bounds=(0, None))
         p.x_range = Range1d(-0.5, 1.5, bounds=(0, None))
+
+        p.axis.axis_label = None
+        p.axis.visible = False
+        p.grid.grid_line_color = None
 
         return p
 
