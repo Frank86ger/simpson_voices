@@ -140,8 +140,8 @@ def load_audio_and_cutup_save_snippets(base_path, cut_document, chars, snippet_c
                                                   selected_char,
                                                   unique_id + '.wav')
                 relative_npy_path = os.path.join(r'snippets_2048',
-                                                  selected_char,
-                                                  unique_id)
+                                                 selected_char,
+                                                 unique_id)
                 np.save(os.path.join(base_path, relative_npy_path), snippet)
                 li.output.write_wav(os.path.join(base_path, relative_wave_path), snippet, sampling_rate)
                 mongo_dic = {"character": selected_char,
@@ -155,8 +155,8 @@ def load_audio_and_cutup_save_snippets(base_path, cut_document, chars, snippet_c
                                                   r'misc',
                                                   unique_id + '.wav')
                 relative_npy_path = os.path.join(r'snippets_2048',
-                                                  r'misc',
-                                                  unique_id)
+                                                 r'misc',
+                                                 unique_id)
                 li.output.write_wav(os.path.join(base_path, relative_wave_path), snippet, sampling_rate)
                 np.save(os.path.join(base_path, relative_npy_path), snippet)
                 mongo_dic = {"character": "misc",
