@@ -9,6 +9,9 @@ class BinomialEstimator(object):
         self.k = k
         self.p_expected_biased = 1.*k/n
         self.p_expected_unbiased = self.calc_p_expected_unbiased()
+        self.left_90, self.right_90 = self.get_confidence_interval(0.9)
+        self.left_95, self.right_95 = self.get_confidence_interval(0.95)
+        self.left_99, self.right_99 = self.get_confidence_interval(0.99)
 
     def binom_dist(self, p):
         # B(k | n, p)
@@ -50,6 +53,14 @@ class BinomialEstimator(object):
             show(p)
 
         return left, right
+
+    def __add__(self, other):
+        # TODO convolve, mean, confidence interval
+        raise NotImplementedError
+
+    def __mul__(self, other):
+        # TODO int 1/|t| f1(t) f2(z/t) dt, mean, confidence interval
+        raise NotImplementedError
 
 
 if __name__ == "__main__":
