@@ -19,6 +19,8 @@ class ConfusionToStats(object):
         self.ap = self.tp + self.fn
         self.an = self.tn + self.fp
 
+        self.all = self.tp + self.tn + self.fp + self.fn
+
         self._tpr = None
         self._tnr = None
         self._ppv = None
