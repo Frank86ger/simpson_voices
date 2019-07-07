@@ -6,13 +6,22 @@ from binom_stats import BinomialEstimator
 class ConfusionToStats(object):
 
     def __init__(self, confusion_matrix):
-        self.confusion_matrix = confusion_matrix
-        # hier sollte es 2x2 sein, check it!
+        """yada
+        yada
 
-        self.tp = confusion_matrix[0, 0]
-        self.tn = confusion_matrix[1, 1]
-        self.fp = confusion_matrix[0, 1]
-        self.fn = confusion_matrix[1, 0]
+        Parameters
+        ----------
+        confusion_matrix : array-like
+            [[TP, FP],
+             [FN, TN]]
+        """
+        self.confusion_matrix = np.array(confusion_matrix, dtype=int)
+        # TODO check for 2x2
+
+        self.tp = self.confusion_matrix[0, 0]
+        self.tn = self.confusion_matrix[1, 1]
+        self.fp = self.confusion_matrix[0, 1]
+        self.fn = self.confusion_matrix[1, 0]
 
         self.pp = self.tp + self.fp
         self.pn = self.tn + self.fn
