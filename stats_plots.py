@@ -290,7 +290,7 @@ class StatsPlotter(object):
                                                                               self.base_stats._tpr.p_expected_unbiased,
                                                                               self.base_stats._tpr.right_90,)
         p.add_layout(Label(x=0.2, y=y_pos[0], text=tpr_text, text_align='left', text_font_size="12pt"))
-        tpr_text_aka = 'sensitivity, recall, hit_rate, true positive rate'
+        tpr_text_aka = 'sensitivity, recall, hit_rate, true positive rate, pod'
         p.add_layout(Label(x=0.2, y=y_pos[0]-0.05, text=tpr_text_aka, text_align='left', text_font_size="10pt"))
 
         # fnr
@@ -366,7 +366,7 @@ class StatsPlotter(object):
         p.add_layout(Label(x=0.2, y=y_pos[8]-0.05, text=acc_text_aka, text_align='left', text_font_size="10pt"))
 
         # pre
-        pre_text = 'PRE: {0:.2f} |unbiased: <{1:.2f}|{2:.2f}|{3:.2f}>'.format(0,
+        pre_text = 'PRE: {0:.2f} |unbiased: <{1:.2f}|{2:.2f}|{3:.2f}>'.format(1.*self.base_stats.ap/self.base_stats.all,
                                                                               0,
                                                                               0,
                                                                               0,)
@@ -402,7 +402,8 @@ class StatsPlotter(object):
         p.add_layout(Label(x=0.2, y=y_pos[12]-0.05, text=mk_text_aka, text_align='left', text_font_size="10pt"))
 
         # lrp
-        lrp_text = 'LR+: {0:.2f} |unbiased: <{1:.2f}|{2:.2f}|{3:.2f}>'.format(0,
+        lrp_val = self.base_stats.tpr / self.base_stats.fpr
+        lrp_text = 'LR+: {0:.2f} |unbiased: <{1:.2f}|{2:.2f}|{3:.2f}>'.format(lrp_val,
                                                                               0,
                                                                               0,
                                                                               0,)
@@ -411,7 +412,8 @@ class StatsPlotter(object):
         p.add_layout(Label(x=0.2, y=y_pos[13]-0.05, text=lrp_text_aka, text_align='left', text_font_size="10pt"))
 
         # lrn
-        lrn_text = 'LR-: {0:.2f} |unbiased: <{1:.2f}|{2:.2f}|{3:.2f}>'.format(0,
+        lrn_val = self.base_stats.fnr / self.base_stats.tnr
+        lrn_text = 'LR-: {0:.2f} |unbiased: <{1:.2f}|{2:.2f}|{3:.2f}>'.format(lrn_val,
                                                                               0,
                                                                               0,
                                                                               0,)
@@ -420,7 +422,8 @@ class StatsPlotter(object):
         p.add_layout(Label(x=0.2, y=y_pos[14]-0.05, text=lrn_text_aka, text_align='left', text_font_size="10pt"))
 
         # dor
-        dor_text = 'DOR: {0:.2f} |unbiased: <{1:.2f}|{2:.2f}|{3:.2f}>'.format(0,
+        dor_val = lrp_val/lrn_val
+        dor_text = 'DOR: {0:.2f} |unbiased: <{1:.2f}|{2:.2f}|{3:.2f}>'.format(dor_val,
                                                                               0,
                                                                               0,
                                                                               0,)
