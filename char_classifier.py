@@ -4,18 +4,10 @@ TODO: needs HEAVY rework
 TODO: cuda
 TODO: das hier wird zum trainer
 """
-
-import numpy as np
-import random
-import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# import torch.optim as optim
-# import torch.autograd as autograd
-# from random import shuffle
 from snippet_sampler import SnippetSampler
-import time
 from confusion_to_stats import ConfusionToStats
 from stats_plots import StatsPlotter
 
