@@ -17,6 +17,7 @@ import torch.nn.functional as F
 from snippet_sampler import SnippetSampler
 import time
 from confusion_to_stats import ConfusionToStats
+from stats_plots import StatsPlotter
 
 
 class Network(nn.Module):
@@ -93,8 +94,15 @@ class Trainer(object):
             print(loss)
 
         confusion = ss.test_data_create_confusion(self.model.cpu())
+        print(confusion)
         cts = ConfusionToStats(confusion)
-        cts.print_prec_recall()
+        # cts.print_prec_recall()
+        print(cts.tpr)
+        print(cts.ppv)
+
+        sp = StatsPlotter(cts)
+        sp.setup_gird_plot()
+
 
 
 if __name__=='__main__':
@@ -105,17 +113,17 @@ if __name__=='__main__':
 
     json_dict = {'base_path': base_path_,
                  'char_select': char_select_,
-                 'rfft': True,
+                 'rfft': False,
                  'batch_size': 10,
                  'one_output_cat': True,
                  }
 
-    model = Network(1025, 512, 1)
+    model = Network(2048, 512, 1)
     model.cuda()
     criterion = torch.nn.MSELoss(reduction='sum')
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
 
-    brain = Trainer.from_json_dict(model, criterion, optimizer, 20, json_dict)
+    brain = Trainer.from_json_dict(model, criterion, optimizer, 30, json_dict)
     brain.train()
 
 
