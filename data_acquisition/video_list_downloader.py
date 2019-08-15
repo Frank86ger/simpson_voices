@@ -19,6 +19,9 @@ class VideoListDownloader(object):
             Base data path
         """
         self.base_path = base_path
+        self.all_urls = []
+        self.time_stamp_jsons = []
+
         self.check_and_mkdir()
 
     def check_and_mkdir(self):
@@ -36,19 +39,23 @@ class VideoListDownloader(object):
         video_addr = r'https://raw.githubusercontent.com/Frank86ger/simpsons_data/master/yt_urls.json'
         web = urllib.request.urlopen(video_addr)
         yt_urls = json.loads(web.read())
+
         out_path = os.path.join(self.base_path, 'yt_urls.json')
         self.save_json(out_path, yt_urls)
 
         for date in yt_urls:
             for url in yt_urls[date]:
                 title = url[(url.find('watch?v=')+8):]
+                self.all_urls.append(title)
                 addr = time_stamps_base_addr + title + '.json'
                 if requests.get(addr).status_code == 200:
+                    self.time_stamp_jsons.append(title)
                     web = urllib.request.urlopen(addr)
                     out_path = os.path.join(self.base_path,
                                             r'raw_data_cutup_jsons',
                                             title+'.json')
-                    self.save_json(out_path, json.loads(web.read()))
+                    json_ = json.loads(web.read())
+                    self.save_json(out_path, json_)
 
     @staticmethod
     def save_json(out_path, json_dict):
@@ -63,7 +70,7 @@ class VideoListDownloader(object):
             Dictionary to save as json-file
         """
         with open(out_path, 'w+') as f:
-            json.dump(json_dict, f)
+            json.dump(json_dict, f, indent=4)
 
 
 if __name__ == '__main__':
