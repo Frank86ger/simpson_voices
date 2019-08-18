@@ -6,7 +6,8 @@ import pymongo
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton,\
     QGroupBox, QComboBox, QLineEdit, QLabel, QDialog, QFileDialog
 
-from data_acquisition.get_video_list_gui import GetVideoListGui
+from data_acquisition.video_list_downloader_gui import GetVideoListGui
+from data_acquisition.ytvideo_downloader_gui import DownloadVideosGui
 
 
 class AcquisitionGui(QWidget):
@@ -24,6 +25,7 @@ class AcquisitionGui(QWidget):
 
         self.w = None
         self.vid_list_window = None
+        self.download_vid_window = None
 
         self.init_ui()
         self.get_mongo_dbs()
@@ -72,18 +74,19 @@ class AcquisitionGui(QWidget):
         processingLayout = QGridLayout()
 
         vidListButton = QPushButton("Get video list")
-        button2 = QPushButton("Downloada data")
+        vidDownloadButton = QPushButton("Downloada data")
         button3 = QPushButton("Cut and label data")
         button4 = QPushButton("Find segments")
         button5 = QPushButton("Create snippets")
         processingLayout.addWidget(vidListButton, 0, 0, 1, 1)
-        processingLayout.addWidget(button2, 1, 0, 1, 1)
+        processingLayout.addWidget(vidDownloadButton, 1, 0, 1, 1)
         processingLayout.addWidget(button3, 2, 0, 1, 1)
         processingLayout.addWidget(button4, 3, 0, 1, 1)
         processingLayout.addWidget(button5, 4, 0, 1, 1)
         processingGroupBox.setLayout(processingLayout)
 
         vidListButton.clicked.connect(self.start_video_list_gui)
+        vidDownloadButton.clicked.connect(self.start_video_download_gui)
 
         grid.addWidget(settingsGroupBox)
         grid.addWidget(processingGroupBox)
@@ -93,6 +96,10 @@ class AcquisitionGui(QWidget):
     def start_video_list_gui(self):
         self.vid_list_window = GetVideoListGui(self.fileLineEdit.text())
         self.vid_list_window.show()
+
+    def start_video_download_gui(self):
+        self.download_vid_window = DownloadVideosGui(self.fileLineEdit.text(), self.databasesDropdown.currentText())
+        self.download_vid_window.show()
 
     def get_mongo_dbs(self):
         client = pymongo.MongoClient()

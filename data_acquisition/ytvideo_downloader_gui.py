@@ -13,7 +13,7 @@ from PyQt5.QtGui import QTextCursor
 from data_acquisition.ytvideo_downloader import YtVideoDownloader
 
 
-class GetVideoListGui(QWidget):
+class DownloadVideosGui(QWidget):
     def __init__(self, base_path, db_name):
         super().__init__()
         self.title = 'Video Download GUI'
