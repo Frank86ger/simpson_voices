@@ -61,8 +61,10 @@ class Trainer(object):
     def train(self):
 
         base_path = r'/home/frank/Documents/simpson_voices_3/'
-        char_select = [['homer'],
-                       ['misc', 'marge', 'lisa', 'bart']]
+        # char_select = [['homer'],
+        #                ['misc', 'marge', 'lisa', 'bart']]
+        char_select = [['bart'],
+                       ['misc', 'marge', 'lisa', 'homer']]
 
         ss = SnippetSampler.from_selection(base_path,
                                            char_select,
@@ -96,6 +98,15 @@ class Trainer(object):
         sp.setup_gird_plot()
 
 
+class TrainingParameters(object):
+    def __init__(self):
+        self.epoch_count = epoch_count
+        self.base_path = base_path,
+        self.char_select = char_select,
+        self.rfft = rfft
+        self.batch_size = batch_size
+        self.one_output_cat = one_output_cat
+
 
 if __name__=='__main__':
 
@@ -105,12 +116,13 @@ if __name__=='__main__':
 
     json_dict = {'base_path': base_path_,
                  'char_select': char_select_,
-                 'rfft': False,
+                 'rfft': True,
                  'batch_size': 10,
                  'one_output_cat': True,
                  }
 
-    model = Network(2048, 512, 1)
+    # model = Network(2048, 512, 1)
+    model = Network(1025, 512, 1)
     model.cuda()
     criterion = torch.nn.MSELoss(reduction='sum')
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
