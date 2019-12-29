@@ -15,7 +15,7 @@ class GetVideoListGui(QWidget):
     def __init__(self, base_path):
         super().__init__()
 
-        self.title = 'Data Acquisition GUI'
+        self.title = 'Video list GUI'
         self.left = 10
         self.top = 10
         self.width = 500
