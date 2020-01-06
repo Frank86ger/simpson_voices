@@ -57,6 +57,23 @@ class VideoListDownloader(object):
                     json_ = json.loads(web.read())
                     self.save_json(out_path, json_)
 
+        colors_time_stamps = []
+        for idx, item_ in enumerate(self.time_stamp_jsons):
+            if item_ in self.all_urls:
+                colors_time_stamps.append('lightGreen')
+            else:
+                colors_time_stamps.append('red')
+
+        colors_urls = []
+        for idx, item_ in enumerate(self.all_urls):
+            if item_ in self.time_stamp_jsons:
+                colors_urls.append('lightGreen')
+            else:
+                colors_urls.append('red')
+
+        self.time_stamp_jsons = list(zip(self.time_stamp_jsons, colors_time_stamps))
+        self.all_urls = list(zip(self.all_urls, colors_urls))
+
     @staticmethod
     def save_json(out_path, json_dict):
         """
