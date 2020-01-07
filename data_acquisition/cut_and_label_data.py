@@ -74,13 +74,17 @@ def setup_videos_2_process(base_path, reprocess):
     # all videos in `raw_data` collection
     videos_to_process = [x['title'] for x in raw_data_col.find({})]
 
+    # TODO is this correct?
     if not reprocess:
         # only process videos not present in `cut_data` collection aka new videos
         videos_to_process = [x for x in videos_to_process if cut_data_col.find_one({"video_name": x}) is None]
 
+    print(f'::: {videos_to_process}')
     for video in videos_to_process:
         video_path = os.path.join(base_path, r'raw_data_cutup_jsons', video + '.json')
+        print(f':::> {video_path}')
         if os.path.isfile(video_path):
+
             cut_chars_and_add_to_mongo(video, base_path, cut_data_col)
 
 
@@ -182,6 +186,7 @@ def get_search_win(index, floating_mean, search_win):
 
 if __name__ == "__main__":
 
-    base_path_ = r'/home/frank/Documents/simpson_voices_3/'
+    # base_path_ = r'/home/frank/Documents/simpson_voices_3/'
+    base_path_ = r'/home/frank/Documents/simp_test_01/'
     reprocess_ = False
     setup_videos_2_process(base_path_, reprocess_)
