@@ -7,6 +7,8 @@ import json
 import urllib.request
 import requests
 
+from utils.config import load_yml
+
 
 class VideoListDownloader(object):
 
@@ -91,6 +93,9 @@ class VideoListDownloader(object):
 
 
 if __name__ == '__main__':
-    base_path_ = r'/home/frank/Documents/simpson_voices_3/'
+
+    config = load_yml()
+    base_path_ = config["base_path"]
+
     vld = VideoListDownloader(base_path_)
     vld.get_video_data()
