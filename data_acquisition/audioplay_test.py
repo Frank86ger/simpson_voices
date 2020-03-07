@@ -42,7 +42,8 @@ def streamer(stream, data):
     stream.close()
 
 ddd = sd.query_devices()
-sd.default.device = 12
+# print(ddd)
+sd.default.device = 6
 
 for i in range(1,7):
     x = 0.1*sin(2*pi*i*440*arange(96e3)/48e3, dtype='float32')
@@ -52,5 +53,5 @@ for i in range(1,7):
     thread = threading.Thread(target=streamer, args=(stream, x))
     thread.start()
     print('Sin %dHz' % (i*440))
-    time.sleep(0.5)
+    time.sleep(1.5)
 time.sleep(5)
