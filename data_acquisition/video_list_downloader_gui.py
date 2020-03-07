@@ -4,9 +4,11 @@ import sys
 import pymongo
 import time
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton,\
-    QGroupBox, QComboBox, QLineEdit, QLabel, QDialog, QFileDialog, QTextEdit, QListWidget
+    QGroupBox, QComboBox, QLineEdit, QLabel, QDialog, QFileDialog, QTextEdit, QListWidget, QListWidgetItem
 
 from PyQt5.QtCore import QThread, pyqtSignal
+
+from PyQt5.QtGui import QColor
 
 from data_acquisition.video_list_downloader import VideoListDownloader
 
@@ -61,13 +63,16 @@ class GetVideoListGui(QWidget):
     def update_all_urls(self, all_urls):
         self.allUrlsTextEdit.clear()
         for item_ in all_urls:
-            self.allUrlsTextEdit.addItem(item_)
+            qwl_item = QListWidgetItem(item_[0])
+            qwl_item.setBackground(QColor(item_[1]))
+            self.allUrlsTextEdit.addItem(qwl_item)
 
     def update_time_stamps(self, time_stamps):
         self.timeStampsTextEdit.clear()
         for item_ in time_stamps:
-            self.timeStampsTextEdit.addItem(item_)
-
+            qlw_item = QListWidgetItem(item_[0])
+            qlw_item.setBackground(QColor(item_[1]))
+            self.timeStampsTextEdit.addItem(qlw_item)
 
 class VideoListDownloadThread(QThread):
 
@@ -75,10 +80,7 @@ class VideoListDownloadThread(QThread):
     time_stamps_signal = pyqtSignal(list)
 
     def __init__(self, base_path, parent=None):
-
-        # super().__init__(self, parent)
         QThread.__init__(self, parent)
-
         self.vld = VideoListDownloader(base_path)
 
     def run(self):

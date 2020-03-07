@@ -110,6 +110,9 @@ class YtVideoDownloader(object):
 
         videos = self.get_video_list()
 
+        jsons_path = os.path.join(self.base_path, r'raw_data_cutup_jsons', '*.json')
+        available_jsons = [os.path.basename(p)[:-5] for p in glob.glob(jsons_path)]
+
         for video in videos:
             print('Downloading and converting {}'.format(video.url))
             if not video.is_in_mongo or (video.is_in_mongo and redownload):
@@ -136,13 +139,18 @@ class YtVideoDownloader(object):
                         relative_video_path = os.path.join(r'raw_data', os.path.basename(video_path))
                         relative_audio_path = os.path.join(r'raw_data', os.path.basename(audio_path))
 
+                        if video.title in available_jsons:
+                            json_available = True
+                        else:
+                            json_available = False
+
                         mongo_entries = {"title": video.title,
                                          "video_path": relative_video_path,
                                          "audio_path": relative_audio_path,
                                          "date_added": video.date,
                                          "segments_processed": False,
                                          "snippets_created": False,
-                                         "json_available": False,
+                                         "json_available": json_available,
                                          "comment": "",
                                          }
 
