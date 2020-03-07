@@ -8,10 +8,13 @@ from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton,\
 
 from data_acquisition.video_list_downloader_gui import GetVideoListGui
 from data_acquisition.ytvideo_downloader_gui import DownloadVideosGui
+from data_acquisition.cut_and_label_data_gui import CutAndLabelDataGui
+
+from utils.config import load_yml
 
 
 class AcquisitionGui(QWidget):
-    def __init__(self):
+    def __init__(self, sound_device):
         super().__init__()
 
         self.title = 'Data Acquisition GUI'
@@ -19,13 +22,16 @@ class AcquisitionGui(QWidget):
         self.top = 10
         self.width = 300
         self.height = 400
+        self.sound_device = sound_device
 
         self.databases = None
-        self.databasesDropdown = None
+        self.databases_dropdown = None
+        self.file_line_edit = None
 
         self.w = None
         self.vid_list_window = None
         self.download_vid_window = None
+        self.cut_and_label_window = None
 
         self.init_ui()
         self.get_mongo_dbs()
@@ -39,72 +45,79 @@ class AcquisitionGui(QWidget):
         self.setLayout(grid)
 
         # settings group box
-        settingsGroupBox = QGroupBox('Database and Folder selection')
-        settingsLayout = QGridLayout()
+        settings_group_box = QGroupBox('Database and Folder selection')
+        settings_layout = QGridLayout()
 
         # Database select Label
-        databaseLabel = QLabel('Database:')
+        database_label = QLabel('Database:')
         # Database Drop down menu
-        self.databasesDropdown = QComboBox()
-        self.databasesDropdown.currentIndexChanged.connect(self.printy)
+        self.databases_dropdown = QComboBox()
+        self.databases_dropdown.currentIndexChanged.connect(self.printy)
         # Database New button
-        databasesAddButton = QPushButton('NEW')
-        databasesAddButton.clicked.connect(self.add_new_database)
+        databases_add_button = QPushButton('NEW')
+        databases_add_button.clicked.connect(self.add_new_database)
 
         # file base label
-        fileLabel = QLabel('Base data path:')
+        file_label = QLabel('Base data path:')
         # file path line edit
-        self.fileLineEdit = QLineEdit()
+        self.file_line_edit = QLineEdit()
         # file path save button
-        fileButton = QPushButton('Browse')
-        fileButton.clicked.connect(self.select_file)
-        setFileButton = QPushButton('Save path to mongo')
-        setFileButton.clicked.connect(self.save_path_to_mongo)
+        file_button = QPushButton('Browse')
+        file_button.clicked.connect(self.select_file)
+        set_file_button = QPushButton('Save path to mongo')
+        set_file_button.clicked.connect(self.save_path_to_mongo)
 
-        settingsLayout.addWidget(databaseLabel, 0, 0)
-        settingsLayout.addWidget(self.databasesDropdown, 1, 0, 1, 3)
-        settingsLayout.addWidget(databasesAddButton, 1, 3, 1, 1)
-        settingsLayout.addWidget(fileLabel, 2, 0, 1, 0)
-        settingsLayout.addWidget(self.fileLineEdit, 3, 0, 1, 3)
-        settingsLayout.addWidget(fileButton, 3, 3, 1, 1)
-        settingsLayout.addWidget(setFileButton, 4, 0, 1, 2)
-        settingsGroupBox.setLayout(settingsLayout)
+        settings_layout.addWidget(database_label, 0, 0)
+        settings_layout.addWidget(self.databases_dropdown, 1, 0, 1, 3)
+        settings_layout.addWidget(databases_add_button, 1, 3, 1, 1)
+        settings_layout.addWidget(file_label, 2, 0, 1, 0)
+        settings_layout.addWidget(self.file_line_edit, 3, 0, 1, 3)
+        settings_layout.addWidget(file_button, 3, 3, 1, 1)
+        settings_layout.addWidget(set_file_button, 4, 0, 1, 2)
+        settings_group_box.setLayout(settings_layout)
 
-        processingGroupBox = QGroupBox('Processing')
-        processingLayout = QGridLayout()
+        processing_group_box = QGroupBox('Processing')
+        processing_layout = QGridLayout()
 
-        vidListButton = QPushButton("Get video list")
-        vidDownloadButton = QPushButton("Downloada data")
-        button3 = QPushButton("Cut and label data")
+        vid_list_button = QPushButton("Get video list")
+        vid_download_button = QPushButton("Downloada data")
+        cut_and_label_button = QPushButton("Cut and label data")
         button4 = QPushButton("Find segments")
         button5 = QPushButton("Create snippets")
-        processingLayout.addWidget(vidListButton, 0, 0, 1, 1)
-        processingLayout.addWidget(vidDownloadButton, 1, 0, 1, 1)
-        processingLayout.addWidget(button3, 2, 0, 1, 1)
-        processingLayout.addWidget(button4, 3, 0, 1, 1)
-        processingLayout.addWidget(button5, 4, 0, 1, 1)
-        processingGroupBox.setLayout(processingLayout)
+        processing_layout.addWidget(vid_list_button, 0, 0, 1, 1)
+        processing_layout.addWidget(vid_download_button, 1, 0, 1, 1)
+        processing_layout.addWidget(cut_and_label_button, 2, 0, 1, 1)
+        processing_layout.addWidget(button4, 3, 0, 1, 1)
+        processing_layout.addWidget(button5, 4, 0, 1, 1)
+        processing_group_box.setLayout(processing_layout)
 
-        vidListButton.clicked.connect(self.start_video_list_gui)
-        vidDownloadButton.clicked.connect(self.start_video_download_gui)
+        vid_list_button.clicked.connect(self.start_video_list_gui)
+        vid_download_button.clicked.connect(self.start_video_download_gui)
+        cut_and_label_button.clicked.connect(self.start_cut_and_label_data_gui)
 
-        grid.addWidget(settingsGroupBox)
-        grid.addWidget(processingGroupBox)
+        grid.addWidget(settings_group_box)
+        grid.addWidget(processing_group_box)
 
         self.show()
 
     def start_video_list_gui(self):
-        self.vid_list_window = GetVideoListGui(self.fileLineEdit.text())
+        self.vid_list_window = GetVideoListGui(self.file_line_edit.text())
         self.vid_list_window.show()
 
     def start_video_download_gui(self):
-        self.download_vid_window = DownloadVideosGui(self.fileLineEdit.text(), self.databasesDropdown.currentText())
+        self.download_vid_window = DownloadVideosGui(self.file_line_edit.text(), self.databases_dropdown.currentText())
         self.download_vid_window.show()
+
+    def start_cut_and_label_data_gui(self):
+        self.cut_and_label_window = CutAndLabelDataGui(self.file_line_edit.text(),
+                                                       self.databases_dropdown.currentText(),
+                                                       self.sound_device)
+        self.cut_and_label_window.show()
 
     def get_mongo_dbs(self):
         client = pymongo.MongoClient()
         self.databases = client.list_database_names()
-        [self.databasesDropdown.addItem(x) for x in self.databases]
+        [self.databases_dropdown.addItem(x) for x in self.databases]
 
     def add_new_database(self):
         self.w = DatabaseSelectionWindow()
@@ -113,33 +126,33 @@ class AcquisitionGui(QWidget):
 
     def add_database(self):
         self.databases.append(self.w.db_name)
-        self.databasesDropdown.addItem(self.w.db_name)
+        self.databases_dropdown.addItem(self.w.db_name)
 
     def select_file(self):
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.Directory)
         dir_ = dialog.getExistingDirectory()
-        self.fileLineEdit.setText(dir_)
+        self.file_line_edit.setText(dir_)
 
     def printy(self):
         client = pymongo.MongoClient()
-        db_name = self.databasesDropdown.currentText()
+        db_name = self.databases_dropdown.currentText()
         mydb = client[db_name]
         meta_data = mydb['meta_data'].find_one()
         if meta_data is not None:
-            self.fileLineEdit.setText(meta_data['base_path'])
+            self.file_line_edit.setText(meta_data['base_path'])
 
     def save_path_to_mongo(self):
         client = pymongo.MongoClient()
-        db_name = self.databasesDropdown.currentText()
-        mydb = client[db_name]
-        meta_data = mydb['meta_data'].find_one()
-        print(self.fileLineEdit.text())
+        db_name = self.databases_dropdown.currentText()
+        db = client[db_name]
+        meta_data = db['meta_data'].find_one()
+        print(self.file_line_edit.text())
         if meta_data is None:
-            mydb['meta_data'].insert_one({'base_path': self.fileLineEdit.text()})
+            db['meta_data'].insert_one({'base_path': self.file_line_edit.text()})
         else:
-            new_value = {"$set": {"base_path": self.fileLineEdit.text()}}
-            mydb['meta_data'].update_one(meta_data, new_value)
+            new_value = {"$set": {"base_path": self.file_line_edit.text()}}
+            db['meta_data'].update_one(meta_data, new_value)
 
 
 class DatabaseSelectionWindow(QDialog):
@@ -147,24 +160,24 @@ class DatabaseSelectionWindow(QDialog):
         super().__init__()
         self.lineEdit = None
         self.db_name = None
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self):
+    def init_ui(self):
         self.setWindowTitle('blah')
         self.setGeometry(10, 10, 200, 100)
         grid = QGridLayout()
         self.setLayout(grid)
         label = QLabel('Database name')
         self.lineEdit = QLineEdit()
-        okButton = QPushButton("OK")
-        cancelButton = QPushButton("Cancel")
+        ok_button = QPushButton("OK")
+        cancel_button = QPushButton("Cancel")
         grid.addWidget(label, 0, 0, 1, 4)
         grid.addWidget(self.lineEdit, 1, 0, 1, 4)
-        grid.addWidget(okButton, 2, 0, 1, 2)
-        grid.addWidget(cancelButton, 2, 2, 1, 2)
+        grid.addWidget(ok_button, 2, 0, 1, 2)
+        grid.addWidget(cancel_button, 2, 2, 1, 2)
 
-        cancelButton.clicked.connect(self.close)
-        okButton.clicked.connect(self.accept_it)
+        cancel_button.clicked.connect(self.close)
+        ok_button.clicked.connect(self.accept_it)
 
     def accept_it(self):
         self.db_name = self.lineEdit.text()
@@ -174,5 +187,9 @@ class DatabaseSelectionWindow(QDialog):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    ex = AcquisitionGui()
+
+    config = load_yml()
+    sound_device_ = config['sound_device']
+
+    ex = AcquisitionGui(sound_device_)
     sys.exit(app.exec_())
