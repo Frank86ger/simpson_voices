@@ -1,3 +1,4 @@
+# TODO: pass folder and database
 
 import os
 import numpy as np
@@ -21,6 +22,7 @@ import pyqtgraph as pg
 # p = pyaudio.PyAudio()
 # chunk = 1024
 
+
 class App(QWidget):
     def __init__(self):
         super().__init__()
@@ -30,7 +32,8 @@ class App(QWidget):
         self.width = 1400
         self.height = 900
 
-        self.base_path = r'/home/frank/Documents/simpson_voices_3'
+        # self.base_path = r'/home/frank/Documents/simpson_voices_3'
+        self.base_path = r'/home/frank/Documents/simp_test_01'
         self.wave = None
 
         self.videoList = None
