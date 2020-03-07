@@ -1,16 +1,13 @@
 
 import sys
 
-import pymongo
-import time
 from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton,\
-    QGroupBox, QComboBox, QLineEdit, QLabel, QDialog, QFileDialog, QTextEdit, QListWidget, QCheckBox, QTextBrowser
-
+    QGroupBox, QLabel, QListWidget, QCheckBox, QTextBrowser
 from PyQt5.QtCore import QThread, pyqtSignal, QObject
-
 from PyQt5.QtGui import QTextCursor
 
 from data_acquisition.ytvideo_downloader import YtVideoDownloader
+from utils.config import load_yml
 
 
 class DownloadVideosGui(QWidget):
@@ -22,9 +19,13 @@ class DownloadVideosGui(QWidget):
         self.width = 800
         self.height = 800
 
+        self.reprocess_check = None
+        self.all_urls_text_edit = None
+        self.log_text_browser = None
+
         self.download_thread = VideoListDownloadThread(base_path, db_name)
 
-        sys.stdout = StdoutStream(newText=self.onUpdateText)
+        sys.stdout = StdoutStream(newText=self.on_update_text)
         self.init_ui()
 
     def init_ui(self):
@@ -36,51 +37,51 @@ class DownloadVideosGui(QWidget):
         grid = QGridLayout()
         self.setLayout(grid)
 
-        self.reprocessCheck = QCheckBox()
-        self.reprocessCheck.stateChanged.connect(self.setReprocess)
-        reprocessLabel = QLabel('Reprocess?')
-        runButton = QPushButton('RUN')
-        runButton.clicked.connect(self.startDownload)
+        self.reprocess_check = QCheckBox()
+        self.reprocess_check.stateChanged.connect(self.set_reprocess)
+        reprocess_label = QLabel('Reprocess?')
+        run_button = QPushButton('RUN')
+        run_button.clicked.connect(self.start_download)
 
-        allUrlsGroupBox = QGroupBox('Available URLs')
-        allUrlsLayout = QGridLayout()
-        self.allUrlsTextEdit = QListWidget()
+        all_urls_group_box = QGroupBox('Available URLs')
+        all_urls_layout = QGridLayout()
+        self.all_urls_text_edit = QListWidget()
         for item_ in video_list:
-            self.allUrlsTextEdit.addItem(item_.title)
+            self.all_urls_text_edit.addItem(item_.title)
 
-        allUrlsLayout.addWidget(self.allUrlsTextEdit)
-        allUrlsGroupBox.setLayout(allUrlsLayout)
+        all_urls_layout.addWidget(self.all_urls_text_edit)
+        all_urls_group_box.setLayout(all_urls_layout)
 
-        logGroupBox = QGroupBox('Log:')
-        logLayout = QGridLayout()
-        self.logTextBrowser = QTextBrowser()
-        logLayout.addWidget(self.logTextBrowser)
-        logGroupBox.setLayout(logLayout)
+        log_group_box = QGroupBox('Log:')
+        log_layout = QGridLayout()
+        self.log_text_browser = QTextBrowser()
+        log_layout.addWidget(self.log_text_browser)
+        log_group_box.setLayout(log_layout)
 
-        closeButton = QPushButton('Close')
-        closeButton.clicked.connect(self.close)
+        close_button = QPushButton('Close')
+        close_button.clicked.connect(self.close)
 
-        grid.addWidget(self.reprocessCheck, 0, 0, 1, 1)
-        grid.addWidget(reprocessLabel, 0, 1, 1, 1)
-        grid.addWidget(runButton, 0, 2, 1, 1)
+        grid.addWidget(self.reprocess_check, 0, 0, 1, 1)
+        grid.addWidget(reprocess_label, 0, 1, 1, 1)
+        grid.addWidget(run_button, 0, 2, 1, 1)
 
-        grid.addWidget(allUrlsGroupBox, 1, 0, 9, 2)
-        grid.addWidget(logGroupBox, 1, 2, 9, 1)
-        grid.addWidget(closeButton, 10, 0, 1, 4)
+        grid.addWidget(all_urls_group_box, 1, 0, 9, 2)
+        grid.addWidget(log_group_box, 1, 2, 9, 1)
+        grid.addWidget(close_button, 10, 0, 1, 4)
 
         self.show()
 
-    def onUpdateText(self, text):
-        cursor = self.logTextBrowser.textCursor()
+    def on_update_text(self, text):
+        cursor = self.log_text_browser.textCursor()
         cursor.movePosition(QTextCursor.End)
         cursor.insertText(text)
-        self.logTextBrowser.setTextCursor(cursor)
-        self.logTextBrowser.ensureCursorVisible()
+        self.log_text_browser.setTextCursor(cursor)
+        self.log_text_browser.ensureCursorVisible()
 
-    def setReprocess(self):
-        self.download_thread.reprocess = self.reprocessCheck.isChecked()
+    def set_reprocess(self):
+        self.download_thread.reprocess = self.reprocess_check.isChecked()
 
-    def startDownload(self):
+    def start_download(self):
         self.download_thread.start()
 
 
@@ -111,10 +112,10 @@ class StdoutStream(QObject):
 
 if __name__ == "__main__":
 
-    base_path_ = r'/home/frank/Documents/simpson_voices_4/'
-    db_name_ = r'simpsons_dev'
-    redownload_ = True
+    config = load_yml()
+    db_name_ = config["db_name"]
+    base_path_ = config["base_path"]
 
     app = QApplication(sys.argv)
-    ex = GetVideoListGui(base_path_, db_name_)
+    ex = DownloadVideosGui(base_path_, db_name_)
     sys.exit(app.exec_())

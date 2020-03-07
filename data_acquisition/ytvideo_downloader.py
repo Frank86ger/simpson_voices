@@ -36,6 +36,8 @@ from collections import namedtuple
 import youtube_dl
 import pymongo
 
+from utils.config import load_yml
+
 
 class YtVideoDownloader(object):
     def __init__(self, base_path, db_name):
@@ -71,7 +73,7 @@ class YtVideoDownloader(object):
                 ydl.download([url])
             download_successful = True
         # DownloadError from youtube_dl utils would be better?
-        except:
+        except Exception:
             download_successful = False
             pass
         return download_successful
@@ -79,8 +81,8 @@ class YtVideoDownloader(object):
     def get_video_list(self):
         Video = namedtuple('Video', 'title, url, date, is_in_mongo')
         client = pymongo.MongoClient()
-        mydb = client[self.db_name]
-        raw_data_col = mydb['raw_data']
+        db = client[self.db_name]
+        raw_data_col = db['raw_data']
         json_path = os.path.join(self.base_path, r'yt_urls.json')
         with open(json_path, 'r') as fp:
             yt_json_urls = json.load(fp)
@@ -102,8 +104,8 @@ class YtVideoDownloader(object):
         """
 
         client = pymongo.MongoClient()
-        mydb = client[self.db_name]
-        raw_data_col = mydb['raw_data']
+        db = client[self.db_name]
+        raw_data_col = db['raw_data']
 
         video_folder_path = os.path.join(self.base_path, 'raw_data')
         allowed_vids = ['mkv', 'mp4', 'webm']  # das in den init
@@ -159,11 +161,10 @@ class YtVideoDownloader(object):
 
 
 if __name__ == "__main__":
+    config = load_yml()
+    db_name_ = config["db_name"]
+    base_path_ = config["base_path"]
 
-    # base_path_ = r'/home/frank/Documents/simpson_voices/'
-    # base_path_ = r'/home/frank/Documents/testing/'
-    base_path_ = r'/home/frank/Documents/simpson_voices_4/'
-    db_name_ = r'simpsons_dev'
     redownload_ = True
 
     ytvd = YtVideoDownloader(base_path_, db_name_)
