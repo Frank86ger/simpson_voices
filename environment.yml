@@ -1,0 +1,23 @@
+name: simpsons_env
+channels:
+  - anaconda
+  - conda-forge
+  - defaults
+dependencies:
+  - alsa-lib
+  - audioread
+  - bokeh
+  - ffmpeg
+  - librosa
+  - numpy
+  - portaudio
+  - pymongo
+  - pyqt=5.9.2
+  - pysoundfile
+  - python=3.7.5
+  - python-sounddevice
+  - scikit-learn
+  - scipy
+  - youtube-dl
+
+
