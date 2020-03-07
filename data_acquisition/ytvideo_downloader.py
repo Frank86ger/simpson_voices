@@ -102,7 +102,7 @@ class YtVideoDownloader(object):
         """
 
         client = pymongo.MongoClient()
-        mydb = client["simpsons"]
+        mydb = client[self.db_name]
         raw_data_col = mydb['raw_data']
 
         video_folder_path = os.path.join(self.base_path, 'raw_data')
