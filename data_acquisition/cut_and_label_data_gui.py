@@ -1,4 +1,5 @@
 # TODO: other colors -> red:no json, blue: ready for processing, green: segments pushed to mongo
+# TODO: rework Qt.UserRole stuff
 """
 Generally show processed data / fill up missing processing.
 Play segments, delete bad segments, push to database.
@@ -26,7 +27,7 @@ class CutAndLabelDataGui(QWidget):
         self.title = 'Cut and label data from jsons.'
         self.left = 10
         self.top = 10
-        self.width = 1400
+        self.width = 800
         self.height = 900
         self.base_path = base_path
         self.db_name = db_name
@@ -91,10 +92,12 @@ class CutAndLabelDataGui(QWidget):
         client = pymongo.MongoClient()
         db = client[self.db_name]
         raw_data = db['raw_data']
-        videos = [(x['title'], x['json_available']) for x in raw_data.find({})]
-        for video, json in videos:
+        videos = [(x['title'], x['json_available'], x['segments_processed']) for x in raw_data.find({})]
+        for video, json, segments in videos:
             qwl_item = QListWidgetItem(video)
-            if json:
+            if json and not segments:
+                qwl_item.setBackground(QColor('lightBlue'))
+            elif json and segments:
                 qwl_item.setBackground(QColor('lightGreen'))
             else:
                 qwl_item.setBackground(QColor('red'))

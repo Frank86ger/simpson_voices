@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton,\
 from data_acquisition.video_list_downloader_gui import GetVideoListGui
 from data_acquisition.ytvideo_downloader_gui import DownloadVideosGui
 from data_acquisition.cut_and_label_data_gui import CutAndLabelDataGui
+from data_acquisition.cut_segments_gui import CutSegmentsGui
 
 from utils.config import load_yml
 
@@ -32,6 +33,7 @@ class AcquisitionGui(QWidget):
         self.vid_list_window = None
         self.download_vid_window = None
         self.cut_and_label_window = None
+        self.cut_segments_window = None
 
         self.init_ui()
         self.get_mongo_dbs()
@@ -82,18 +84,19 @@ class AcquisitionGui(QWidget):
         vid_list_button = QPushButton("Get video list")
         vid_download_button = QPushButton("Downloada data")
         cut_and_label_button = QPushButton("Cut and label data")
-        button4 = QPushButton("Find segments")
+        find_segments_button = QPushButton("Find segments")
         button5 = QPushButton("Create snippets")
         processing_layout.addWidget(vid_list_button, 0, 0, 1, 1)
         processing_layout.addWidget(vid_download_button, 1, 0, 1, 1)
         processing_layout.addWidget(cut_and_label_button, 2, 0, 1, 1)
-        processing_layout.addWidget(button4, 3, 0, 1, 1)
+        processing_layout.addWidget(find_segments_button, 3, 0, 1, 1)
         processing_layout.addWidget(button5, 4, 0, 1, 1)
         processing_group_box.setLayout(processing_layout)
 
         vid_list_button.clicked.connect(self.start_video_list_gui)
         vid_download_button.clicked.connect(self.start_video_download_gui)
         cut_and_label_button.clicked.connect(self.start_cut_and_label_data_gui)
+        find_segments_button.clicked.connect(self.start_cut_segments_gui)
 
         grid.addWidget(settings_group_box)
         grid.addWidget(processing_group_box)
@@ -113,6 +116,12 @@ class AcquisitionGui(QWidget):
                                                        self.databases_dropdown.currentText(),
                                                        self.sound_device)
         self.cut_and_label_window.show()
+
+    def start_cut_segments_gui(self):
+        self.cut_segments_window = CutSegmentsGui(self.file_line_edit.text(),
+                                                  self.databases_dropdown.currentText(),
+                                                  self.sound_device)
+        self.cut_segments_window.show()
 
     def get_mongo_dbs(self):
         client = pymongo.MongoClient()
