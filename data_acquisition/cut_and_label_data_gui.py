@@ -1,3 +1,4 @@
+# TODO: other colors -> red:no json, blue: ready for processing, green: segments pushed to mongo
 """
 Generally show processed data / fill up missing processing.
 Play segments, delete bad segments, push to database.
