@@ -8,6 +8,9 @@ import pymongo
 import librosa as li
 import pyqtgraph as pg
 
+import numpy as np
+import scipy.ndimage as ndi
+
 from PyQt5.QtWidgets import QApplication, QWidget, QListWidget, QGridLayout, QPushButton,\
     QGroupBox, QListWidgetItem, QLineEdit, QLabel, QCheckBox
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -240,7 +243,10 @@ class CutSegmentsGui(QWidget):
         if not self.signal_power_check_box.isChecked():
             self.signal_plot.plot(self.complete_audio[start:end])
         else:
-            self.signal_plot.plot(self.power_signal[start:end])
+            filter_length = int(self.filter_length_line_edit.text())
+            power_signal = ndi.convolve(np.abs(self.complete_audio[start:end]) ** 2.,
+                                        1. * np.ones(filter_length) / filter_length)
+            self.signal_plot.plot(power_signal)
 
 
 class LoadAudioThread(QThread):
