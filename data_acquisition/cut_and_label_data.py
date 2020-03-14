@@ -133,6 +133,7 @@ def push_to_mongodb(data, video, db_name, repush=True):
                              "start_samp": int(start),
                              "end_samp": int(end),
                              "length": int(sample_length),
+                             "clusters_created": False,
                              }
             cut_data_col.insert_one(mongo_entries)
 

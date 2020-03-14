@@ -1,5 +1,5 @@
 # TODO: pass folder and database
-# TODO:
+# TODO: rename snippets -> clusters
 
 import os
 import sys
@@ -17,6 +17,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QColor, QIntValidator, QDoubleValidator
 
 from utils.config import load_yml
+from utils.audio_player import AudioPlayer
 import data_acquisition.cut_segments as cs
 
 
@@ -34,6 +35,7 @@ class CutSegmentsGui(QWidget):
         self.sound_device = sound_device
 
         self.segment_interval = None
+        self.current_video = None
         self.complete_audio = None
         self.power_signal = None
         self.wave = None
@@ -49,6 +51,8 @@ class CutSegmentsGui(QWidget):
         self.min_interval_line_edit = None
         self.signal_power_check_box = None
         self.find_snippets_thread = None
+
+        self.audio_player = AudioPlayer()
 
         self.init_ui()
 
@@ -77,11 +81,13 @@ class CutSegmentsGui(QWidget):
         settings_group_box = QGroupBox('Settings')
         settings_layout = QGridLayout()
         self.load_video_button = QPushButton("Load Video")
-        button2 = QPushButton("Save Snippets")
-        button3 = QPushButton("Mark Segments as done")
+        save_snippets_button = QPushButton("Save Snippets")
+        segment_done_button = QPushButton("Mark Segment as done")
+        video_done_button = QPushButton("Mark Video as done")
         settings_layout.addWidget(self.load_video_button, 0, 0, 1, 1)
-        settings_layout.addWidget(button2, 1, 1, 1, 1)
-        settings_layout.addWidget(button3, 2, 2, 1, 1)
+        settings_layout.addWidget(save_snippets_button, 1, 1, 1, 1)
+        settings_layout.addWidget(segment_done_button, 2, 2, 1, 1)
+        settings_layout.addWidget(video_done_button, 1, 2, 1, 1)
         settings_group_box.setLayout(settings_layout)
 
         # Signal settings
@@ -148,6 +154,12 @@ class CutSegmentsGui(QWidget):
         self.segmentList.itemSelectionChanged.connect(self.load_segment_data)
         self.cluster_list.itemSelectionChanged.connect(self.show_cluster)
         self.signal_power_check_box.stateChanged.connect(self.show_plot)
+        play_segment_button.clicked.connect(self.select_and_play_audio_segment)
+        play_snippet_button.clicked.connect(self.select_and_play_audio_snippet)
+        delete_snippet_button.clicked.connect(self.delete_snippet)
+        save_snippets_button.clicked.connect(self.save_snippets_to_mongo)
+        segment_done_button.clicked.connect(self.mark_segment_as_done)
+        video_done_button.clicked.connect(self.mark_video_as_completed)
 
         self.show()
         self.get_videos()
@@ -156,6 +168,7 @@ class CutSegmentsGui(QWidget):
         segment_data = self.segmentList.currentItem().data(5)
         start = segment_data['start_samp']
         end = segment_data['end_samp']
+        char = segment_data['character']
 
         wave = self.complete_audio[start:end]
         filter_length = int(self.filter_length_line_edit.text())
@@ -163,6 +176,7 @@ class CutSegmentsGui(QWidget):
         min_interval = int(self.min_interval_line_edit.text())
 
         self.find_snippets_thread = FindSnippetsThread(wave,
+                                                       char,
                                                        filter_length=filter_length,
                                                        cut_ampl=cut_ampl,
                                                        min_interval=min_interval)
@@ -194,6 +208,7 @@ class CutSegmentsGui(QWidget):
         db = client[self.db_name]
         cut_data = db['cut_data']
         title = self.videoList.currentItem().text()
+        self.current_video = title
         self.segmentList.clear()
 
         segments = list(cut_data.find({'title': title}))
@@ -202,11 +217,16 @@ class CutSegmentsGui(QWidget):
             x = QListWidgetItem()
             x.setData(5, segment)
             x.setText(f"{segment['character']} : {str(segment['start_samp'])}")
+            if segment['clusters_created']:
+                x.setBackground(QColor('lightGreen'))
             self.segmentList.addItem(x)
 
         self.load_audio_thread = LoadAudioThread(self.base_path, title, int(self.filter_length_line_edit.text()))
         self.load_audio_thread.start()
         self.load_audio_thread.signals.connect(self.set_audio_data)
+
+    def update_segment(self):
+        pass
 
     def set_audio_data(self, audio_data):
         self.complete_audio, self.power_signal = audio_data
@@ -218,7 +238,7 @@ class CutSegmentsGui(QWidget):
         client = pymongo.MongoClient()
         db = client[self.db_name]
         raw_data = db['raw_data']
-        videos = [(x['title'], x['segments_processed'], x['snippets_created']) for x in raw_data.find({})]
+        videos = [(x['title'], x['segments_processed'], x['clusters_created']) for x in raw_data.find({})]
         for video, segments, snippets in videos:
             qwl_item = QListWidgetItem(video)
             if segments and not snippets:
@@ -248,6 +268,69 @@ class CutSegmentsGui(QWidget):
                                         1. * np.ones(filter_length) / filter_length)
             self.signal_plot.plot(power_signal)
 
+    def select_and_play_audio_segment(self):
+        segment_data = self.segmentList.selectedItems()[0].data(5)
+        # todo: use `segment_interval`?
+        start = segment_data['start_samp']
+        end = segment_data['end_samp']
+        self.audio_player.play(self.complete_audio[start:end])
+
+    def select_and_play_audio_snippet(self):
+        snippet_data = self.cluster_list.currentItem().data(5)
+        start = snippet_data[0] + self.segment_interval[0]
+        end = snippet_data[1] + self.segment_interval[0]
+        self.audio_player.play(self.complete_audio[start:end])
+
+    def delete_snippet(self):
+        self.cluster_list.takeItem(self.cluster_list.currentRow())
+
+    def save_snippets_to_mongo(self):
+
+        client = pymongo.MongoClient()
+        db = client[self.db_name]
+        # TODO: 'cluster_data'
+        snippet_col = db['snippet_data']
+
+        snippet_data = [self.cluster_list.item(i).data(5) for i in range(self.cluster_list.count())]
+        mongo_dics = []
+        # todo: do this in cut_segments.py
+        for snippet in snippet_data:
+            start = snippet[0] + self.segment_interval[0]
+            end = snippet[1] + self.segment_interval[0]
+            char = snippet[2]
+            # TODO length !
+            mongo_dics.append({'title': 0,
+                               'character': char,
+                               'start': start,
+                               'end': end,
+                               'length': end-start,
+                               })
+        snippet_col.insert_many(mongo_dics)
+
+    def mark_segment_as_done(self):
+
+        segment_item = self.segmentList.selectedItems()[0]
+        segment_item.setBackground(QColor('lightGreen'))
+        client = pymongo.MongoClient()
+        db = client[self.db_name]
+        segment_col = db['cut_data']
+
+        query = {"title": self.current_video, "start_samp": self.segment_interval[0]}
+        update = {"$set": {"clusters_created": True}}
+        segment_col.update_one(query, update)
+
+    def mark_video_as_completed(self):
+        video_item = self.videoList.selectedItems()[0]
+        video_item.setBackground(QColor('lightGreen'))
+
+        client = pymongo.MongoClient()
+        db = client[self.db_name]
+        video_col = db['raw_data']
+
+        query = {"title": self.current_video}
+        update = {"$set": {"clusters_created": True}}
+        video_col.update_one(query, update)
+
 
 class LoadAudioThread(QThread):
     signals = pyqtSignal(list)
@@ -269,15 +352,18 @@ class LoadAudioThread(QThread):
 class FindSnippetsThread(QThread):
     snippet_list = pyqtSignal(list)
 
-    def __init__(self, wave, filter_length, cut_ampl, min_interval):
+    def __init__(self, wave, char, filter_length, cut_ampl, min_interval):
         QThread.__init__(self)
         self.wave = wave
+        self.char = char
         self.filter_length = filter_length
         self.cut_ampl = cut_ampl
         self.min_interval = min_interval
 
     def run(self):
         intervals = cs.find_snippets(self.wave, self.filter_length, self.cut_ampl, self.min_interval)
+        for interval in intervals:
+            interval.append(self.char)
         self.snippet_list.emit(intervals)
 
 

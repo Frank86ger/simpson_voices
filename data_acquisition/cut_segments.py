@@ -232,4 +232,5 @@ def find_snippets(wave, filter_length=1000, cut_ampl=1.0, min_interval=2048):
 if __name__ == "__main__":
     base_path_ = r'/home/frank/Documents/simpson_voices_3/'
     reprocess_ = True
+    assert False
     crawl_collection_and_setup_snippets(base_path_, reprocess_)

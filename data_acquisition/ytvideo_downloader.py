@@ -151,7 +151,7 @@ class YtVideoDownloader(object):
                                          "audio_path": relative_audio_path,
                                          "date_added": video.date,
                                          "segments_processed": False,
-                                         "snippets_created": False,
+                                         "clusters_created": False,
                                          "json_available": json_available,
                                          "comment": "",
                                          }

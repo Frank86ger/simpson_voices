@@ -6,17 +6,15 @@ Play segments, delete bad segments, push to database.
 """
 
 import sys
-import time
-import threading
 
 import pymongo
-import sounddevice as sd
 
 from PyQt5.QtWidgets import QApplication, QWidget, QListWidget, QGridLayout, QPushButton, QGroupBox, QListWidgetItem
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QColor
 
 import data_acquisition.cut_and_label_data as cald
+from utils.audio_player import AudioPlayer
 from utils.config import load_yml
 
 
@@ -41,6 +39,8 @@ class CutAndLabelDataGui(QWidget):
         self.video_load_button = None
         self.audio_play_button = None
         self.segment_list = None
+
+        self.audio_player = AudioPlayer()
 
         self.init_ui()
 
@@ -125,16 +125,7 @@ class CutAndLabelDataGui(QWidget):
 
     def select_and_play_audio_segment(self):
         _, start, end = self.segment_list.selectedItems()[0].data(Qt.UserRole)
-        self.play_audio_segment(start, end)
-
-    def play_audio_segment(self, start, end):
-        sampling_rate = 44100
-        audio_time = ((end-start) + 10) / sampling_rate
-        sd.default.device = self.sound_device
-        stream = sd.OutputStream(samplerate=sampling_rate, channels=1, dtype='float32')
-        thread = threading.Thread(target=audio_streamer, args=(stream, self.audio_signal[start:end]))
-        thread.start()
-        time.sleep(audio_time)
+        self.audio_player.play(self.audio_signal[start:end])
 
     def delete_audio_segment(self):
         self.segment_list.takeItem(self.segment_list.currentRow())
@@ -142,12 +133,6 @@ class CutAndLabelDataGui(QWidget):
     def push_to_mongodb(self):
         data = [self.segment_list.item(i).data(Qt.UserRole) for i in range(self.segment_list.count())]
         cald.push_to_mongodb(data, self.selected_video, self.db_name, repush=True)
-
-
-def audio_streamer(stream, data):
-    stream.start()
-    stream.write(data)
-    stream.close()
 
 
 class CutAndLabelFromJsonsThreat(QThread):
