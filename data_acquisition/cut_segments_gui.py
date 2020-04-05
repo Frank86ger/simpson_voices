@@ -299,7 +299,7 @@ class CutSegmentsGui(QWidget):
             end = snippet[1] + self.segment_interval[0]
             char = snippet[2]
             # TODO length !
-            mongo_dics.append({'title': 0,
+            mongo_dics.append({'title': self.current_video,
                                'character': char,
                                'start': start,
                                'end': end,
