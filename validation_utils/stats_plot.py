@@ -8,7 +8,7 @@ from bokeh.models import Range1d
 from bokeh.models import Label
 from bokeh.plotting import figure, show
 
-from confusion_to_stats import ConfusionToStats
+from validation_utils.confusion_to_stats import ConfusionToStats
 
 
 class StatsPlotter(object):

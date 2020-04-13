@@ -1,6 +1,6 @@
 
 import numpy as np
-from binom_stats import BinomialEstimator
+from validation_utils.binom_stats import BinomialEstimator
 
 
 class ConfusionToStats(object):
