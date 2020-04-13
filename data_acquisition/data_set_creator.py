@@ -1,4 +1,6 @@
 import os
+import json
+import copy
 
 import numpy as np
 
@@ -96,7 +98,7 @@ class DatasetWriter(object):
         if not os.path.exists(os.path.join(self.dset_path, 'data')):
             os.mkdir(os.path.join(self.dset_path, 'data'))
 
-    def query_data(self, data):
+    def query_data(self, data, tt_split=0.0):
         # chars may only exist ONCE !
 
         client = pymongo.MongoClient()
@@ -110,20 +112,32 @@ class DatasetWriter(object):
             nmbr_classes = len(data)
             char_to_label = {char: idx for idx, class_ in enumerate(data.values()) for char in class_}
             for k, v in char_to_label.items():
-                tmp = np.zeros(nmbr_classes, dtype=int)
-                tmp[v] = 1
+                tmp = np.zeros(nmbr_classes, dtype=float)
+                tmp[v] = 1.
                 char_to_label[k] = tmp
             class_to_label = {c: idx for idx, c in enumerate(data.keys())}
             for k, v in class_to_label.items():
-                tmp = np.zeros(nmbr_classes, dtype=int)
-                tmp[v] = 1
+                tmp = np.zeros(nmbr_classes, dtype=float)
+                tmp[v] = 1.
                 class_to_label[k] = tmp
 
         else:
             raise ValueError('One hot needed for classes bigger than 2!')
 
+        # TODO: test train split
+        train_data = copy.deepcopy(data)
+        test_data = copy.deepcopy(data)
+        for k1 in data.keys():
+            for k2 in data[k1].values():
+                train_data[k1][k2] = int(tt_split * data[k1][k2])
+                test_data[k1][k2] = data[k1][k2] - train_data[k1][k2]
+
         char_counter = {char: 0 for class_ in data.values() for char in class_}
         char_limit = {char: idx for v in data.values() for char, idx in v.items()}
+        # train_char_counter = {char: 0 for class_ in data.values() for char in class_}
+        # train_char_limit = {char: idx for v in data.values() for char, idx in v.items()}
+        # test_char_counter = {char: 0 for class_ in data.values() for char in class_}
+        # test_char_limit = {char: idx for v in data.values() for char, idx in v.items()}
 
         unique_videos = snippet_col.find({}).distinct("title")
         print(unique_videos)
@@ -132,7 +146,7 @@ class DatasetWriter(object):
         for video in unique_videos:
             audio_path = os.path.join(self.base_path, 'raw_data', f'{video}.wav')
             loaded_audio = li.core.load(audio_path, mono=True, sr=44100)[0]
-            clusters = snippet_col.find({'title': video})
+            clusters = snippet_col.find({'title': video})  # TODO shuffle
             for cluster in clusters:
                 char = cluster['character']
                 if char_counter[char] < char_limit[char]:
@@ -146,6 +160,7 @@ class DatasetWriter(object):
                             snippet_index += 1
                             char_counter[char] += 1
         self.save_meta_data(char_counter, class_to_label, data)
+        self.save_meta_data(data)
 
     def cut_cluster(self, signal):
         nmbr_snippets = int((len(signal) - self.cluster_length) / self.skip_length + 1)
@@ -154,25 +169,19 @@ class DatasetWriter(object):
             snippets.append(signal[i*self.skip_length:i*self.skip_length+self.cluster_length])
         return snippets
 
+    # TODO: attr with char name
     def save_snippet_to_file(self, snippet, label, snippet_index):
-
+        # test train
         snippet_path = os.path.join(self.dset_path, 'data', f'{snippet_index:010d}.hdf5')
         with h5py.File(snippet_path, 'w') as h5f:
             h5f['data'] = snippet
             h5f['label'] = label
 
-    def save_meta_data(self, char_counter, class_to_label, data):
-        meta_path = os.path.join(self.dset_path, 'meta.hdf5')
-        with h5py.File(meta_path, 'w') as h5f:
-            for char, count in char_counter.items():
-                # label = char_to_label[char]
-                h5f.attrs[f'{char}_count'] = count
-                # h5f.attrs[f'{char}_label'] = label
-            for class_, chars in data.items():
-                for char in chars:
-                    h5f.attrs[f'{char}_class'] = class_
-            for class_, label in class_to_label.items():
-                h5f.attrs[f'{class_}_label'] = label
+    # def save_meta_data(self, char_counter, class_to_label, data):
+    def save_meta_data(self, data):
+        meta_path = os.path.join(self.dset_path, 'meta.json')
+        with open(meta_path, "w") as outfile:
+            json.dump(data, outfile)
 
 
 if __name__ == "__main__":
@@ -180,17 +189,8 @@ if __name__ == "__main__":
     ret = get_characters('simpsons_9', 2048, 512)
     print(ret)
 
-    # data_ = {'class1': {'char1': 200, 'char2': 300}, 'class2': {'char3': 300, 'char4': 600, 'char5': 700}}
-    # data_ = {'class1': {'char1': 200, 'char2': 300}, 'class2': {'char3': 300, 'char4': 600, 'char5': 700}}
     data_ = {'class1': {'blah1': 103}, 'class2': {'blub2': 149}}
 
     base_path_ = r'/home/frank/Documents/simpson_voices_9'
     dsw = DatasetWriter('dset1', 'simpsons_9', base_path_, 2048, 512, one_hot=True)
     dsw.query_data(data_)
-
-    # a = {'class1': {'char1': 200, 'char2': 300}, 'class2': {'char3': 300, 'char4': 600, 'char5': 700}}
-    # print(get_equal_classes_w_equal_chars(a))
-    # get_equal_classes(a)
-    # print(a)
-    # print(get_equal_classes(a))
-    # query_data(a, 'simpsons_9')
