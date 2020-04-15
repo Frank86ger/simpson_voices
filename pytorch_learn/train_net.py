@@ -27,27 +27,33 @@ if __name__ == "__main__":
     tt_split = 0.9
     # model = Network(2048, 512, 2)
     model = Network(1025, 512, 2)
+    # model = Network(2049, 512, 2)
 
-    epoch_count = 20
+    epoch_count = 60
     criterion = torch.nn.MSELoss(reduction='sum')
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
 
-    path_ = r'/home/frank/Documents/simpson_voices_9/datasets/moep3'
+    # path_ = r'/home/frank/Documents/simpson_voices_9/datasets/moep3'
+    # path_ = r'/home/frank/Documents/simpson_voices_11/datasets/test_set_3'
+    # path_ = r'/home/frank/Documents/simpson_voices_11/datasets/test_set_5'
+    # path_ = r'/home/frank/Documents/simpson_voices_11/datasets/4096_dset'
+    path_ = r'/home/frank/Documents/simpson_voices_11/datasets/homerlisamarge_dset'
     _dset = H5MultiDataset(path_, as_fft=True)
     train_length = int(tt_split * len(_dset))
     train_set, val_set = torch.utils.data.random_split(_dset, [train_length, len(_dset) - train_length])
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=2, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=10, shuffle=True, num_workers=4)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=len(val_set), shuffle=True)
 
     # training
     losses = []
     for epoch in range(epoch_count):
+        print(f'Epoch {epoch + 1} / {epoch_count}')
 
         for batch_ndx, (data, label) in enumerate(train_loader):
             label_pred = model(data)
             loss = criterion(label_pred, label)
             losses.append(loss)
-            print(loss)
+            # print(loss)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -68,3 +74,4 @@ if __name__ == "__main__":
     sp.setup_gird_plot()
 
     plt.plot(losses)
+    plt.show()
