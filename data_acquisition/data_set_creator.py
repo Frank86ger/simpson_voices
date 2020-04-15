@@ -101,6 +101,9 @@ class DatasetWriter(object):
     def query_data(self, data, tt_split=0.0):
         # chars may only exist ONCE !
 
+        # TODO remove!
+        data = get_equal_classes(data)
+
         client = pymongo.MongoClient()
         db = client[self.db_name]
         snippet_col = db['snippet_data']
@@ -124,13 +127,13 @@ class DatasetWriter(object):
         else:
             raise ValueError('One hot needed for classes bigger than 2!')
 
-        # TODO: test train split
-        train_data = copy.deepcopy(data)
-        test_data = copy.deepcopy(data)
-        for k1 in data.keys():
-            for k2 in data[k1].values():
-                train_data[k1][k2] = int(tt_split * data[k1][k2])
-                test_data[k1][k2] = data[k1][k2] - train_data[k1][k2]
+        # # TODO: test train split
+        # train_data = copy.deepcopy(data)
+        # test_data = copy.deepcopy(data)
+        # for k1 in data.keys():
+        #     for k2 in data[k1].values():
+        #         train_data[k1][k2] = int(tt_split * data[k1][k2])
+        #         test_data[k1][k2] = data[k1][k2] - train_data[k1][k2]
 
         char_counter = {char: 0 for class_ in data.values() for char in class_}
         char_limit = {char: idx for v in data.values() for char, idx in v.items()}
@@ -149,6 +152,8 @@ class DatasetWriter(object):
             clusters = snippet_col.find({'title': video})  # TODO shuffle
             for cluster in clusters:
                 char = cluster['character']
+                if char not in char_counter.keys():
+                    continue
                 if char_counter[char] < char_limit[char]:
                     start = cluster['start']
                     end = cluster['end']
@@ -159,7 +164,7 @@ class DatasetWriter(object):
                             self.save_snippet_to_file(snippet, label, snippet_index)
                             snippet_index += 1
                             char_counter[char] += 1
-        self.save_meta_data(char_counter, class_to_label, data)
+        # self.save_meta_data(char_counter, class_to_label, data)
         self.save_meta_data(data)
 
     def cut_cluster(self, signal):
